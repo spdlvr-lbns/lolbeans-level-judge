@@ -69,16 +69,12 @@ async function load(){
     const p = d.data();
 
     tbody.innerHTML += `
-      <tr>
-        <td>${p.username}</td>
-        <td>${p.time.toFixed(3)}</td>
-        <td>${p.approved ? "Approved" : "Pending"}</td>
-        <td>
-          <button onclick="approve('${d.id}')">
-            ✓
-          </button>
-        </td>
-      </tr>
+<tr>
+<th>Player</th>
+<th>Time</th>
+<th>Status</th>
+<th>Remove</th>
+</tr>
     `;
 
   });
