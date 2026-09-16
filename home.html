@@ -233,8 +233,10 @@ if(communitySnap.exists()){
 
   communityPoints = Math.max(0,110-rank*10);
 
-  document.getElementById("community").innerText =
-    communityPoints;
+  communityPoints = Math.max(0,110-rank*10);
+
+document.getElementById("community").innerText =
+  communityPoints + " pt";
 }
     
   if(snap.exists()){
