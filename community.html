@@ -128,15 +128,16 @@ async function loadRanking(){
   p.points = Math.max(0, 110 - (p.rank * 10));
 });
 
-  players.forEach((p,i)=>{
-    ranking.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
-        <td>${p.username}</td>
-        <td>${p.time.toFixed(3)}</td>
-      </tr>
-    `;
-  });
+players.forEach((p,i)=>{
+  ranking.innerHTML += `
+    <tr>
+      <td>${p.rank}</td>
+      <td>${p.username}</td>
+      <td>${p.time.toFixed(3)}</td>
+      <td>${p.points}</td>
+    </tr>
+  `;
+});
 
 }
 
