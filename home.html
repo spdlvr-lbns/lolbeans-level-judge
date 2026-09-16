@@ -154,6 +154,12 @@ const speed=document.getElementById("speed");
 const wins=document.getElementById("wins");
 const tag=document.getElementById("tag");
 
+    const speed = document.getElementById("speed");
+const wins = document.getElementById("wins");
+const tag = document.getElementById("tag");
+
+let communityPoints = 0;
+    
 function calc(){
 
   const s=Math.max(0,Math.min(300,
@@ -198,7 +204,6 @@ onAuthStateChanged(auth, async(user)=>{
 
   const ref=doc(db,"users",user.uid);
   const snap=await getDoc(ref);
-let communityPoints = 0;
 
 const communityRef = doc(
   db,
