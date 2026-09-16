@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOLBeans Home</title>
+
+<style>
+*{box-sizing:border-box;}
+body{
+    margin:0;
+    background:#0f172a;
+    color:white;
+    font-family:Arial,sans-serif;
+}
+header{
+    background:#7c3aed;
+    padding:18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+}
+.card{
+    background:#1e293b;
+    border-radius:15px;
+    padding:18px;
+    margin-bottom:18px;
+}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+}
+.grade{
+    font-size:58px;
+    font-weight:bold;
+    color:#facc15;
+}
+.points{
+    font-size:28px;
+}
+input{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    margin-top:6px;
+}
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#7c3aed;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:10px;
+}
+nav{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+}
+.navBtn{
+    text-decoration:none;
+    color:white;
+    background:#1e293b;
+    padding:14px;
+    text-align:center;
+    border-radius:12px;
+}
+.small{color:#cbd5e1;font-size:14px;}
+</style>
+</head>
+<body>
+
+<header>
+<div>
+  <h2 style="margin:0;">🏁 LOLBeans</h2>
+  <div id="username" class="small">Loading...</div>
+</div>
+<button id="logout" style="width:auto;padding:10px 16px;margin:0;">Logout</button>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <div class="grade" id="grade">D</div>
+  <div class="points" id="total">0 / 450</div>
+  <div class="small">Overall Grade</div>
+</div>
+
+<div class="grid">
+
+<div class="card">
+<h3>🏁 Speedrun</h3>
+<input id="speed" type="number" min="490" max="1200" value="490">
+<div id="speedPts" class="small">0 / 300</div>
+</div>
+
+<div class="card">
+<h3>🏆 Wins</h3>
+<input id="wins" type="number" min="0" max="10000" value="0">
+<div id="winPts" class="small">0 / 100</div>
+</div>
+
+<div class="card">
+<h3>⚡ Tag</h3>
+<input id="tag" type="number" min="0" max="2000" value="0">
+<div id="tagPts" class="small">0 / 50</div>
+</div>
+
+<div class="card">
+<h3>🌍 Community</h3>
+<div style="font-size:28px;" id="community">0</div>
+<div class="small">Coming Soon</div>
+</div>
+
+</div>
+
+<div class="card">
+<h3>💾 Save</h3>
+<p class="small">Save your Speedrun, Wins and Tag score.</p>
+<button id="save">Save Stats</button>
+<div id="msg" class="small"></div>
+</div>
+
+<nav>
+<a class="navBtn" href="home.html">🏠 Home</a>
+<a class="navBtn" href="ranking.html">🏆 Rank</a>
+<a class="navBtn" href="#">🌍 Comm</a>
+<a class="navBtn" href="#">⚙️ More</a>
+</nav>
+
+</div>
+
+<script type="module">
+import { auth, db, logout } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+const speed=document.getElementById("speed");
+const wins=document.getElementById("wins");
+const tag=document.getElementById("tag");
+
+function calc(){
+
+  const s=Math.max(0,Math.min(300,
+      Math.round((1200-speed.value)/710*300)));
+
+  const w=Math.round((wins.value/10000)*100);
+
+  const t=Math.round((tag.value/2000)*50);
+
+  const total=s+w+t;
+
+  document.getElementById("speedPts").textContent=s+" / 300";
+  document.getElementById("winPts").textContent=w+" / 100";
+  document.getElementById("tagPts").textContent=t+" / 50";
+  document.getElementById("total").textContent=total+" / 450";
+
+  let grade="D";
+  if(total>=500) grade="SS";
+  else if(total>=400) grade="S";
+  else if(total>=300) grade="A";
+  else if(total>=200) grade="B";
+  else if(total>=100) grade="C";
+
+  document.getElementById("grade").textContent=grade;
+
+  return {s,w,t,total,grade};
+}
+
+speed.oninput=calc;
+wins.oninput=calc;
+tag.oninput=calc;
+
+onAuthStateChanged(auth, async(user)=>{
+
+  if(!user){
+    location.href="index.html";
+    return;
+  }
+
+  const username=user.email.replace("@lbns.gg","");
+  document.getElementById("username").textContent=username;
+
+  const ref=doc(db,"users",user.uid);
+  const snap=await getDoc(ref);
+
+  if(snap.exists()){
+    const d=snap.data();
+    speed.value=d.speedrun||490;
+    wins.value=d.wins||0;
+    tag.value=d.tag||0;
+  }
+
+  calc();
+
+  document.getElementById("save").onclick=async()=>{
+
+    const score=calc();
+
+    await setDoc(ref,{
+      username,
+      speedrun:Number(speed.value),
+      wins:Number(wins.value),
+      tag:Number(tag.value),
+      total:score.total,
+      grade:score.grade
+    });
+
+    document.getElementById("msg").textContent="Saved successfully!";
+  };
+
+});
+
+document.getElementById("logout").onclick=async()=>{
+  await logout();
+  location.href="index.html";
+};
+
+</script>
+
+</body>
+</html>
