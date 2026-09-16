@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
 
 <title>Community Challenge</title>
 
@@ -96,24 +102,6 @@ a{
   color:#fde68a;
 }
 
-.pending{
-  color:#fbbf24;
-}
-
-.approved{
-  color:#86efac;
-}
-
-.rejected{
-  color:#fca5a5;
-}
-
-.countdown{
-  margin-top:10px;
-  font-weight:bold;
-  color:#c4b5fd;
-}
-
 .message{
   margin-top:10px;
   font-weight:bold;
@@ -146,6 +134,7 @@ a{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -154,17 +143,22 @@ a{
 
 <a href="home.html">← Home</a>
 
+
 <div class="card">
 
-<h1 id="eventTitle">🌍 Community Challenge</h1>
+<h1 id="eventTitle">
+🌍 Community Challenge
+</h1>
 
-<p id="eventMap">Loading event...</p>
+<p id="eventMap">
+Loading event...
+</p>
 
 <p id="eventStatus"></p>
 
 <p id="eventDates"></p>
 
-<p id="countdown" class="countdown"></p>
+<p id="countdown"></p>
 
 </div>
 
@@ -253,7 +247,12 @@ Loading...
 
 <script type="module">
 
-import { auth, db, storage } from "./firebase.js";
+import {
+  auth,
+  db,
+  storage
+} from "./firebase.js";
+
 
 import {
   collection,
@@ -261,13 +260,16 @@ import {
   setDoc,
   getDocs,
   getDoc
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
 
 import {
   ref,
   uploadBytes,
   getDownloadURL
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
 
 const eventTitle =
@@ -318,12 +320,14 @@ let countdownTimer = null;
 
 
 /* =========================
-   DATE
+   TIMESTAMP
 ========================= */
 
 function getTimestamp(value){
 
-  if(!value) return 0;
+  if(!value){
+    return 0;
+  }
 
   if(typeof value.toMillis === "function"){
     return value.toMillis();
@@ -333,6 +337,10 @@ function getTimestamp(value){
 
 }
 
+
+/* =========================
+   FORMAT DATE
+========================= */
 
 function formatDate(timestamp){
 
@@ -351,112 +359,141 @@ function formatDate(timestamp){
 
 
 /* =========================
-   EVENT
+   LOAD EVENT
 ========================= */
 
 async function loadEvent(){
 
-  const snap =
-    await getDocs(
-      collection(db,"events")
+  try{
+
+    const snap =
+      await getDocs(
+        collection(db,"events")
+      );
+
+
+    const now =
+      Date.now();
+
+
+    let activeEvent = null;
+    let activeId = "";
+
+    let nextEvent = null;
+    let nextId = "";
+
+
+    snap.forEach(d=>{
+
+      const e =
+        d.data();
+
+
+      const start =
+        getTimestamp(e.startAt);
+
+      const end =
+        getTimestamp(e.endAt);
+
+
+      if(
+        start &&
+        end &&
+        now >= start &&
+        now < end
+      ){
+
+        if(
+          !activeEvent ||
+          start > activeEvent._start
+        ){
+
+          activeEvent = {
+            ...e,
+            _start:start,
+            _end:end
+          };
+
+          activeId =
+            d.id;
+
+        }
+
+      }
+
+
+      if(
+        start &&
+        now < start
+      ){
+
+        if(
+          !nextEvent ||
+          start < nextEvent._start
+        ){
+
+          nextEvent = {
+            ...e,
+            _start:start,
+            _end:end
+          };
+
+          nextId =
+            d.id;
+
+        }
+
+      }
+
+    });
+
+
+    if(activeEvent){
+
+      currentEvent =
+        activeId;
+
+      currentEventData =
+        activeEvent;
+
+      showActiveEvent();
+
+    }
+
+    else if(nextEvent){
+
+      currentEvent =
+        "";
+
+      currentEventData =
+        nextEvent;
+
+      showWaitingEvent();
+
+    }
+
+    else{
+
+      currentEvent =
+        "";
+
+      currentEventData =
+        null;
+
+      showNoEvent();
+
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "Event loading error:",
+      error
     );
 
-  const now = Date.now();
-
-  let activeEvent = null;
-
-  let activeId = "";
-
-  let nextEvent = null;
-
-  let nextId = "";
-
-  snap.forEach(d=>{
-
-    const e = d.data();
-
-    const start =
-      getTimestamp(e.startAt);
-
-    const end =
-      getTimestamp(e.endAt);
-
-    if(
-      start &&
-      end &&
-      now >= start &&
-      now < end
-    ){
-
-      if(
-        !activeEvent ||
-        start > activeEvent._start
-      ){
-
-        activeEvent = e;
-
-        activeEvent._start = start;
-
-        activeEvent._end = end;
-
-        activeId = d.id;
-
-      }
-
-    }
-
-    if(
-      start &&
-      now < start
-    ){
-
-      if(
-        !nextEvent ||
-        start < nextEvent._start
-      ){
-
-        nextEvent = e;
-
-        nextEvent._start = start;
-
-        nextEvent._end = end;
-
-        nextId = d.id;
-
-      }
-
-    }
-
-  });
-
-
-  if(activeEvent){
-
-    currentEvent = activeId;
-
-    currentEventData = activeEvent;
-
-    showActiveEvent();
-
-  }
-
-  else if(nextEvent){
-
-    currentEvent = "";
-
-    currentEventData = nextEvent;
-
-    showWaitingEvent();
-
-  }
-
-  else{
-
-    currentEvent = "";
-
-    currentEventData = null;
-
-    showNoEvent();
+    eventMap.textContent =
+      "Failed to load event.";
 
   }
 
@@ -464,21 +501,26 @@ async function loadEvent(){
 
 
 /* =========================
-   ACTIVE
+   ACTIVE EVENT
 ========================= */
 
 function showActiveEvent(){
 
-  const e = currentEventData;
+  const e =
+    currentEventData;
+
 
   eventTitle.textContent =
     "🌍 " + e.name;
 
+
   eventMap.textContent =
     "🗺️ Map: " + e.map;
 
+
   eventStatus.innerHTML =
     '<span class="status active">🟢 EVENT ACTIVE</span>';
+
 
   eventDates.textContent =
     "📅 " +
@@ -486,12 +528,19 @@ function showActiveEvent(){
     " ～ " +
     formatDate(e._end);
 
+
   submissionCard.style.display =
     "block";
 
-  submitBtn.disabled = false;
 
-  startCountdown(e._end,false);
+  submitBtn.disabled =
+    false;
+
+
+  startCountdown(
+    e._end,
+    false
+  );
 
 }
 
@@ -502,16 +551,21 @@ function showActiveEvent(){
 
 function showWaitingEvent(){
 
-  const e = currentEventData;
+  const e =
+    currentEventData;
+
 
   eventTitle.textContent =
     "🌍 " + e.name;
 
+
   eventMap.textContent =
     "🗺️ Map: " + e.map;
 
+
   eventStatus.innerHTML =
     '<span class="status waiting">🟡 NOT STARTED</span>';
+
 
   eventDates.textContent =
     "📅 " +
@@ -519,13 +573,19 @@ function showWaitingEvent(){
     " ～ " +
     formatDate(e._end);
 
+
   submissionCard.style.display =
     "none";
+
 
   ranking.innerHTML =
     '<tr><td colspan="4">Event has not started yet.</td></tr>';
 
-  startCountdown(e._start,true);
+
+  startCountdown(
+    e._start,
+    true
+  );
 
 }
 
@@ -539,18 +599,26 @@ function showNoEvent(){
   eventTitle.textContent =
     "🌍 Community Challenge";
 
+
   eventMap.textContent =
     "There is currently no active event.";
+
 
   eventStatus.innerHTML =
     '<span class="status ended">🔴 NO ACTIVE EVENT</span>';
 
-  eventDates.textContent = "";
 
-  countdown.textContent = "";
+  eventDates.textContent =
+    "";
+
+
+  countdown.textContent =
+    "";
+
 
   submissionCard.style.display =
     "none";
+
 
   ranking.innerHTML =
     '<tr><td colspan="4">No active event.</td></tr>';
@@ -562,58 +630,82 @@ function showNoEvent(){
    COUNTDOWN
 ========================= */
 
-function startCountdown(target,starting){
+function startCountdown(
+  target,
+  starting
+){
 
   if(countdownTimer){
 
-    clearInterval(countdownTimer);
+    clearInterval(
+      countdownTimer
+    );
 
   }
+
 
   function update(){
 
     const difference =
       target - Date.now();
 
+
     if(difference <= 0){
 
-      clearInterval(countdownTimer);
+      clearInterval(
+        countdownTimer
+      );
+
 
       countdown.textContent =
         starting
         ? "Starting..."
         : "⏰ Event ended.";
 
-      setTimeout(async()=>{
 
-        await loadEvent();
+      setTimeout(
+        async()=>{
 
-        await loadRanking();
+          await loadEvent();
+          await loadRanking();
 
-      },1000);
+        },
+        1000
+      );
+
 
       return;
 
     }
 
+
     const seconds =
-      Math.floor(difference / 1000);
+      Math.floor(
+        difference / 1000
+      );
+
 
     const days =
-      Math.floor(seconds / 86400);
+      Math.floor(
+        seconds / 86400
+      );
+
 
     const hours =
       Math.floor(
         (seconds % 86400) / 3600
       );
 
+
     const minutes =
       Math.floor(
         (seconds % 3600) / 60
       );
 
+
     const secs =
       seconds % 60;
+
 
     countdown.textContent =
       starting
@@ -624,34 +716,49 @@ function startCountdown(target,starting){
 
   }
 
+
   update();
 
+
   countdownTimer =
-    setInterval(update,1000);
+    setInterval(
+      update,
+      1000
+    );
 
 }
 
 
 /* =========================
-   SCREENSHOT PREVIEW
+   IMAGE PREVIEW
 ========================= */
 
 screenshot.onchange = ()=>{
 
   if(!screenshot.files.length){
 
+    preview.style.display =
+      "none";
+
+    fileName.textContent =
+      "";
+
     return;
 
   }
 
+
   const file =
     screenshot.files[0];
+
 
   fileName.textContent =
     "📷 " + file.name;
 
+
   preview.src =
     URL.createObjectURL(file);
+
 
   preview.style.display =
     "block";
@@ -671,72 +778,109 @@ async function loadRanking(){
 
   }
 
-  const snap =
-    await getDocs(
-      collection(
-        db,
-        "community",
-        currentEvent,
-        "times"
-      )
+
+  try{
+
+    const snap =
+      await getDocs(
+        collection(
+          db,
+          "community",
+          currentEvent,
+          "times"
+        )
+      );
+
+
+    let players = [];
+
+
+    snap.forEach(d=>{
+
+      const p =
+        d.data();
+
+
+      if(
+        p.status === "approved"
+      ){
+
+        players.push(p);
+
+      }
+
+    });
+
+
+    players.sort(
+      (a,b)=>
+        Number(a.time) -
+        Number(b.time)
     );
 
-  let players = [];
 
-  snap.forEach(d=>{
+    ranking.innerHTML =
+      "";
 
-    const p = d.data();
 
-    if(p.status === "approved"){
+    players.forEach(
+      (p,i)=>{
 
-      players.push(p);
+        const points =
+          calculatePoints(
+            i + 1
+          );
+
+
+        ranking.innerHTML += `
+
+          <tr>
+
+            <td>
+              ${i + 1}
+            </td>
+
+            <td>
+              ${escapeHTML(
+                p.username || "Player"
+              )}
+            </td>
+
+            <td>
+              ${Number(
+                p.time
+              ).toFixed(3)}
+            </td>
+
+            <td>
+              ${points}
+            </td>
+
+          </tr>
+
+        `;
+
+      }
+    );
+
+
+    if(players.length === 0){
+
+      ranking.innerHTML =
+        '<tr><td colspan="4">No approved submissions yet.</td></tr>';
 
     }
 
-  });
 
+  }catch(error){
 
-  players.sort(
-    (a,b)=>
-      Number(a.time)-Number(b.time)
-  );
-
-
-  ranking.innerHTML = "";
-
-
-  players.forEach((p,i)=>{
-
-    const points =
-      calculatePoints(i+1);
-
-    ranking.innerHTML += `
-
-      <tr>
-
-        <td>${i+1}</td>
-
-        <td>${escapeHTML(p.username)}</td>
-
-        <td>
-          ${Number(p.time).toFixed(3)}
-        </td>
-
-        <td>
-          ${points}
-        </td>
-
-      </tr>
-
-    `;
-
-  });
-
-
-  if(players.length === 0){
+    console.error(
+      "Ranking error:",
+      error
+    );
 
     ranking.innerHTML =
-      '<tr><td colspan="4">No approved submissions yet.</td></tr>';
+      '<tr><td colspan="4">Failed to load ranking.</td></tr>';
 
   }
 
@@ -764,6 +908,7 @@ function calculatePoints(position){
 
   };
 
+
   return points[position] || 0;
 
 }
@@ -778,6 +923,7 @@ async function loadMyPoints(){
   const user =
     auth.currentUser;
 
+
   if(!user){
 
     myPoints.textContent =
@@ -787,18 +933,36 @@ async function loadMyPoints(){
 
   }
 
-  const snap =
-    await getDoc(
-      doc(db,"users",user.uid)
+
+  try{
+
+    const snap =
+      await getDoc(
+        doc(
+          db,
+          "users",
+          user.uid
+        )
+      );
+
+
+    if(snap.exists()){
+
+      const data =
+        snap.data();
+
+
+      myPoints.textContent =
+        `${data.community || 0} pt`;
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "Points error:",
+      error
     );
-
-  if(snap.exists()){
-
-    const data =
-      snap.data();
-
-    myPoints.textContent =
-      `${data.community || 0} pt`;
 
   }
 
@@ -811,10 +975,12 @@ async function loadMyPoints(){
 
 submitBtn.onclick = async()=>{
 
-  msg.textContent = "";
+  msg.textContent =
+    "";
 
   const user =
     auth.currentUser;
+
 
   if(!user){
 
@@ -870,7 +1036,9 @@ submitBtn.onclick = async()=>{
 
   const time =
     Number(
-      document.getElementById("time").value
+      document.getElementById(
+        "time"
+      ).value
     );
 
 
@@ -890,7 +1058,9 @@ submitBtn.onclick = async()=>{
   }
 
 
-  if(!screenshot.files.length){
+  if(
+    !screenshot.files.length
+  ){
 
     msg.textContent =
       "Screenshot is required.";
@@ -903,7 +1073,34 @@ submitBtn.onclick = async()=>{
   }
 
 
-  submitBtn.disabled = true;
+  /*
+    Check file size.
+    10 MB maximum.
+  */
+
+  const file =
+    screenshot.files[0];
+
+
+  if(
+    file.size >
+    10 * 1024 * 1024
+  ){
+
+    msg.textContent =
+      "❌ Screenshot must be 10 MB or smaller.";
+
+    msg.className =
+      "message error";
+
+    return;
+
+  }
+
+
+  submitBtn.disabled =
+    true;
+
 
   msg.textContent =
     "Uploading screenshot...";
@@ -914,40 +1111,88 @@ submitBtn.onclick = async()=>{
 
   try{
 
-    const file =
-      screenshot.files[0];
+    /*
+      Get username from Firestore.
+
+      Gmail is NOT used.
+    */
+
+    const userSnap =
+      await getDoc(
+        doc(
+          db,
+          "users",
+          user.uid
+        )
+      );
+
+
+    if(
+      !userSnap.exists() ||
+      !userSnap.data().username
+    ){
+
+      throw new Error(
+        "Username is not set. Please go to Home and set your username."
+      );
+
+    }
+
+
+    const username =
+      userSnap.data().username;
 
 
     /*
-    Firebase Storage
+      Upload screenshot
     */
+
+    msg.textContent =
+      "📤 Uploading screenshot...";
+
 
     const storagePath =
       `community/${currentEvent}/${user.uid}_${Date.now()}`;
 
+
     const storageRef =
-      ref(storage,storagePath);
+      ref(
+        storage,
+        storagePath
+      );
 
 
     await uploadBytes(
       storageRef,
-      file
+      file,
+      {
+        contentType:
+          file.type || "image/jpeg"
+      }
     );
 
 
+    /*
+      Get screenshot URL
+    */
+
+    msg.textContent =
+      "🔗 Saving screenshot...";
+
+
     const screenshotURL =
-      await getDownloadURL(storageRef);
-
-
-    const username =
-      user.email
-      ? user.email.replace("@lbns.gg","")
-      : "Player";
+      await getDownloadURL(
+        storageRef
+      );
 
 
     /*
-    Firestore
+      Save submission
     */
+
+    msg.textContent =
+      "💾 Saving your time...";
+
 
     await setDoc(
 
@@ -961,15 +1206,20 @@ submitBtn.onclick = async()=>{
 
       {
 
-        username,
+        username:
+          username,
 
-        time,
+        time:
+          time,
 
-        screenshotURL,
+        screenshotURL:
+          screenshotURL,
 
-        submittedAt:Date.now(),
+        submittedAt:
+          Date.now(),
 
-        status:"pending"
+        status:
+          "pending"
 
       }
 
@@ -983,9 +1233,14 @@ submitBtn.onclick = async()=>{
       "message success";
 
 
-    screenshot.value = "";
+    screenshot.value =
+      "";
 
-    fileName.textContent = "";
+    fileName.textContent =
+      "";
+
+    preview.src =
+      "";
 
     preview.style.display =
       "none";
@@ -993,10 +1248,19 @@ submitBtn.onclick = async()=>{
 
   }catch(error){
 
-    console.error(error);
+    console.error(
+      "SUBMISSION ERROR:",
+      error
+    );
+
 
     msg.textContent =
-      "Failed to submit.";
+      "❌ " +
+      (
+        error.message ||
+        "Failed to submit."
+      );
+
 
     msg.className =
       "message error";
@@ -1004,28 +1268,44 @@ submitBtn.onclick = async()=>{
   }
 
 
-  submitBtn.disabled = false;
+  submitBtn.disabled =
+    false;
 
 };
 
 
 /* =========================
-   ESCAPE
+   ESCAPE HTML
 ========================= */
 
 function escapeHTML(value){
 
   return String(value)
 
-    .replaceAll("&","&amp;")
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
 
-    .replaceAll("<","&lt;")
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
 
-    .replaceAll(">","&gt;")
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
 
-    .replaceAll('"',"&quot;")
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
 
-    .replaceAll("'","&#039;");
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -1042,20 +1322,24 @@ await loadMyPoints();
 
 
 /*
-30秒ごとにイベント更新
+  Refresh event every 30 seconds
 */
 
-setInterval(async()=>{
+setInterval(
+  async()=>{
 
-  await loadEvent();
+    await loadEvent();
 
-  await loadRanking();
+    await loadRanking();
 
-  await loadMyPoints();
+    await loadMyPoints();
 
-},30000);
+  },
+  30000
+);
 
 </script>
 
 </body>
+
 </html>
