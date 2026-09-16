@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overall Ranking</title>
+<style>
+body{background:#0f172a;color:white;font-family:Arial;margin:0;padding:20px;}
+h1{text-align:center;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:12px;border-bottom:1px solid #334155;}
+th{color:#cbd5e1;}
+tr:hover{background:#1e293b;}
+.rank{width:60px;text-align:center;}
+.score{text-align:right;}
+a{color:#a78bfa;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<a href="index.html">← Home</a>
+
+<h1>🏆 Overall Ranking</h1>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Player</th>
+<th>Grade</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
+
+<script type="module">
+import { db } from "./firebase.js";
+import {
+collection,
+getDocs
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+const tbody = document.getElementById("ranking");
+
+const snap = await getDocs(collection(db,"users"));
+
+let players=[];
+
+snap.forEach(doc=>{
+  const d=doc.data();
+
+  const speed=Math.max(0,Math.min(300,
+      Math.round((1200-d.speedrun)/710*300)));
+
+  const wins=Math.round((d.wins/10000)*100);
+
+  const tag=Math.round((d.tag/2000)*50);
+
+  const total=speed+wins+tag;
+
+  let grade="D";
+  if(total>=500)grade="SS";
+  else if(total>=400)grade="S";
+  else if(total>=300)grade="A";
+  else if(total>=200)grade="B";
+  else if(total>=100)grade="C";
+
+  players.push({
+    name:d.username,
+    grade,
+    total
+  });
+});
+
+players.sort((a,b)=>b.total-a.total);
+
+players.forEach((p,i)=>{
+  tbody.innerHTML+=`
+  <tr>
+    <td class="rank">${i+1}</td>
+    <td>${p.name}</td>
+    <td>${p.grade}</td>
+    <td class="score">${p.total}</td>
+  </tr>`;
+});
+</script>
+
+</body>
+</html>
