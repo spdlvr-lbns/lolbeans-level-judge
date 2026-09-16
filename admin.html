@@ -1562,25 +1562,98 @@ onAuthStateChanged(
     ====================================
     */
 
+onAuthStateChanged(
+  auth,
+  async user => {
+
+    console.log("Firebase Auth user:", user);
+
     if(!user){
 
-      adminStatus.innerHTML =
-        "<p class='error'>Not logged in. Redirecting...</p>";
-
-      /*
-      少し待ってからログインページへ
-      */
-
-      setTimeout(()=>{
-
-        location.href =
-          "index.html";
-
-      },500);
+      adminStatus.innerHTML = `
+        <p class="error">
+          ❌ Firebaseではログインしていません。
+        </p>
+        <p>
+          このページを閉じずに、まず index.html でログインしてください。
+        </p>
+        <button
+          onclick="location.href='index.html'"
+        >
+          Login
+        </button>
+      `;
 
       return;
 
     }
+
+
+    console.log("Logged in email:", user.email);
+
+
+    if(!checkAdmin(user)){
+
+      adminStatus.innerHTML = `
+        <p class="error">
+          ❌ Access denied.
+        </p>
+
+        <p>
+          Logged in as:
+          ${escapeHTML(user.email || "")}
+        </p>
+
+        <p>
+          このメールアドレスはAdminとして登録されていません。
+        </p>
+      `;
+
+      createButton.disabled = true;
+
+      eventsDiv.innerHTML =
+        "<p class='error'>Administrator access required.</p>";
+
+      submissionsDiv.innerHTML =
+        "<p class='error'>Administrator access required.</p>";
+
+      return;
+
+    }
+
+
+    /*
+    ================================
+    ADMIN LOGIN SUCCESS
+    ================================
+    */
+
+    currentAdmin = user;
+
+
+    adminStatus.innerHTML = `
+
+      <div class="admin-email">
+
+        ✅ Logged in as administrator
+
+        <br><br>
+
+        <strong>
+          ${escapeHTML(user.email)}
+        </strong>
+
+      </div>
+
+    `;
+
+
+    await loadEvents();
+
+    await loadSubmissions();
+
+  }
+);
 
 
     /*
