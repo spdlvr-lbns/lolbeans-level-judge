@@ -71,17 +71,7 @@ document.getElementById("loginBtn").addEventListener("click", () => {
   }
 });
   
-window.login = () => {
-  const pass = document.getElementById("adminPass").value;
 
-  if (pass === ADMIN_PASSWORD) {
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("panel").classList.remove("hidden");
-    load();
-  } else {
-    document.getElementById("msg").innerText = "Wrong password";
-  }
-};
 
 async function load() {
   tbody.innerHTML = "";
