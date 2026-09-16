@@ -3,51 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel</title>
+<title>LOLBeans Admin</title>
+
 <style>
-body{margin:0;font-family:Arial;background:#0f172a;color:white;padding:20px;}
-.card{background:#1e293b;border-radius:15px;padding:20px;max-width:900px;margin:auto;}
-input{width:100%;padding:10px;border:none;border-radius:8px;margin:10px 0;}
-button{padding:10px 16px;background:#7c3aed;color:white;border:none;border-radius:8px;cursor:pointer;}
-table{width:100%;border-collapse:collapse;margin-top:20px;}
-th,td{padding:10px;border-bottom:1px solid #334155;text-align:left;}
-.hidden{display:none;}
+body{
+  margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:20px;
+}
+.card{
+  max-width:900px;
+  margin:auto;
+  background:#1e293b;
+  border-radius:16px;
+  padding:20px;
+}
+input{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  margin:10px 0;
+  box-sizing:border-box;
+}
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  background:#7c3aed;
+  color:white;
+  cursor:pointer;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+th,td{
+  padding:12px;
+  border-bottom:1px solid #334155;
+  text-align:left;
+}
+.hidden{
+  display:none;
+}
+.remove{
+  background:#dc2626;
+}
+.live{
+  color:#22c55e;
+}
+.removed{
+  color:#ef4444;
+}
 </style>
+
 </head>
 <body>
 
 <div class="card" id="loginBox">
-<h2>🔒 Admin Login</h2>
-<input id="adminPass" type="password" placeholder="Admin Password">
-<button id="loginBtn">Login</button>
-<p id="msg"></p>
+  <h2>🔒 Admin Login</h2>
+
+  <input
+    id="adminPass"
+    type="password"
+    placeholder="Admin Password"
+  >
+
+  <button id="loginBtn">Login</button>
+
+  <p id="msg"></p>
 </div>
 
 <div class="card hidden" id="panel">
-<h2>🏁 Community Submissions</h2>
-<p>Only approved submissions count.</p>
 
-<table>
-<thead>
-<tr>
-<th>Player</th>
-<th>Time</th>
-<th>Status</th>
-<th>Remove</th>
-</tr>
-</thead>
-<tbody id="list">
-<tr>
-<td>ExamplePlayer</td>
-<td>28.442</td>
-<td>Pending</td>
-</tr>
-</tbody>
-</table>
+  <h2>🏁 Community Submissions</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Player</th>
+        <th>Time</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody id="list"></tbody>
+
+  </table>
+
 </div>
 
 <script type="module">
+
 import { db } from "./firebase.js";
+
 import {
   collection,
   getDocs,
@@ -56,52 +109,97 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 const ADMIN_PASSWORD = "lolbeans2026";
-const tbody = document.getElementById("list");
-const ADMIN_PASSWORD = "lolbeans2026";
 
-document.getElementById("loginBtn").addEventListener("click", () => {
-  const pass = document.getElementById("adminPass").value;
+const loginBtn = document.getElementById("loginBtn");
+const list = document.getElementById("list");
 
-  if (pass === ADMIN_PASSWORD) {
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("panel").classList.remove("hidden");
-    load();
-  } else {
-    document.getElementById("msg").textContent = "Wrong password";
+loginBtn.addEventListener("click",()=>{
+
+  const pass =
+    document.getElementById("adminPass").value;
+
+  if(pass!==ADMIN_PASSWORD){
+
+    document.getElementById("msg").textContent =
+      "Wrong password";
+
+    return;
   }
+
+  document.getElementById("loginBox")
+    .classList.add("hidden");
+
+  document.getElementById("panel")
+    .classList.remove("hidden");
+
+  load();
+
 });
-  
 
+async function load(){
 
-async function load() {
-  tbody.innerHTML = "";
+  list.innerHTML="";
 
   const snap = await getDocs(
-    collection(db, "community", "september2026", "times")
+    collection(
+      db,
+      "community",
+      "september2026",
+      "times"
+    )
   );
 
-  snap.forEach(d => {
-    const p = d.data();
+  snap.forEach(d=>{
 
-    tbody.innerHTML += `
+    const p=d.data();
+
+    list.innerHTML += `
       <tr>
         <td>${p.username}</td>
-        <td>${p.time.toFixed(3)}</td>
-        <td>${p.invalid ? "Removed" : "Live"}</td>
+        <td>${Number(p.time).toFixed(3)}</td>
+        <td class="${p.invalid?"removed":"live"}">
+          ${p.invalid?"Removed":"Live"}
+        </td>
         <td>
-          <button onclick="removeRun('${d.id}')">🗑 Remove</button>
+          ${
+            p.invalid
+            ? "-"
+            : `<button class="remove" data-id="${d.id}">
+                 🗑 Remove
+               </button>`
+          }
         </td>
       </tr>
     `;
+
   });
+
+  document
+    .querySelectorAll(".remove")
+    .forEach(btn=>{
+
+      btn.addEventListener("click",async()=>{
+
+        await updateDoc(
+          doc(
+            db,
+            "community",
+            "september2026",
+            "times",
+            btn.dataset.id
+          ),
+          { invalid:true }
+        );
+
+        load();
+
+      });
+
+    });
+
 }
 
-window.removeRun = async (id) => {
-  await updateDoc(
-    doc(db, "community", "september2026", "times", id),
-    { invalid: true }
-  );
-
-  load();
-};
 </script>
+
+</body>
+</html>
