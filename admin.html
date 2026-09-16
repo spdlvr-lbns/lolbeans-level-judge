@@ -134,7 +134,44 @@ onAuthStateChanged(auth, (user) => {
 
   document.getElementById("panel").classList.remove("hidden");
   load();
+document
+.getElementById("createEvent")
+.addEventListener("click", async()=>{
 
+  const name =
+    document.getElementById("eventName").value;
+
+  const map =
+    document.getElementById("eventMap").value;
+
+  const start =
+    document.getElementById("startDate").value;
+
+  const end =
+    document.getElementById("endDate").value;
+
+  if(!name || !map){
+    return;
+  }
+
+  const id =
+    name.toLowerCase().replaceAll(" ","-");
+
+  await setDoc(
+    doc(db,"events",id),
+    {
+      name,
+      map,
+      start,
+      end,
+      active:true
+    }
+  );
+
+  document.getElementById("eventMsg")
+    .textContent = "Event Created!";
+
+});
 });
 
   if (user.email !== ADMIN_EMAIL) {
