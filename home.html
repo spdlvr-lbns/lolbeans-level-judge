@@ -6,175 +6,131 @@
 <title>LOLBeans Home</title>
 
 <style>
-*{box-sizing:border-box;}
 body{
-    margin:0;
-    background:#0f172a;
-    color:white;
-    font-family:Arial,sans-serif;
-}
-header{
-    background:#7c3aed;
-    padding:18px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#0f172a;
+  color:white;
 }
 .container{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
+  max-width:900px;
+  margin:auto;
+  padding:20px;
 }
 .card{
-    background:#1e293b;
-    border-radius:15px;
-    padding:18px;
-    margin-bottom:18px;
-}
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:15px;
-}
-.grade{
-    font-size:58px;
-    font-weight:bold;
-    color:#facc15;
-}
-.points{
-    font-size:28px;
+  background:#1e293b;
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:20px;
 }
 input{
-    width:100%;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    margin-top:6px;
+  width:100%;
+  margin:8px 0;
 }
-button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:8px;
-    background:#7c3aed;
-    color:white;
-    font-weight:bold;
-    cursor:pointer;
-    margin-top:10px;
+.nav{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
 }
-nav{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
+.nav a{
+  text-decoration:none;
+  color:white;
+  background:#334155;
+  padding:10px 14px;
+  border-radius:8px;
 }
-.navBtn{
-    text-decoration:none;
-    color:white;
-    background:#1e293b;
-    padding:14px;
-    text-align:center;
-    border-radius:12px;
-}
-.small{color:#cbd5e1;font-size:14px;}
 </style>
 </head>
 <body>
 
-<header>
-<div>
-  <h2 style="margin:0;">🏁 LOLBeans</h2>
-  <div id="username" class="small">Loading...</div>
-</div>
-<button id="logout" style="width:auto;padding:10px 16px;margin:0;">Logout</button>
-</header>
-
 <div class="container">
 
 <div class="card">
-  <div class="grade" id="grade">D</div>
-  <div class="points" id="total">0 / 450</div>
-  <div class="small">Overall Grade</div>
-</div>
-
-<div class="grid">
-
-<div class="card">
-<h3>🏁 Speedrun</h3>
-<input id="speed" type="number" min="490" max="1200" value="490">
-<div id="speedPts" class="small">0 / 300</div>
+  <h1>👋 Welcome, <span id="username">Player</span></h1>
+  <h2 id="grade">D</h2>
+  <h3 id="total">0 / 550</h3>
 </div>
 
 <div class="card">
-<h3>🏆 Wins</h3>
-<input id="wins" type="number" min="0" max="10000" value="0">
-<div id="winPts" class="small">0 / 100</div>
+  <div class="nav">
+    <a href="community.html">🌍 Community</a>
+    <a href="ranking.html">🏆 Rankings</a>
+    <a href="admin.html">👑 Admin</a>
+  </div>
 </div>
 
 <div class="card">
-<h3>⚡ Tag</h3>
-<input id="tag" type="number" min="0" max="2000" value="0">
-<div id="tagPts" class="small">0 / 50</div>
+  <h2>⏱ Speedrun</h2>
+  <input id="speed" type="range" min="490" max="1200" value="1200">
+  <p>Time: <span id="speedValue">1200</span></p>
+  <p id="speedPts">0 / 300</p>
 </div>
 
 <div class="card">
-<h3>🌍 Community</h3>
-<div style="font-size:28px;" id="community">0</div>
-<div class="small">Coming Soon</div>
-</div>
-
+  <h2>🏆 Battle Royale Wins</h2>
+  <input id="wins" type="range" min="0" max="10000" value="0">
+  <p>Wins: <span id="winsValue">0</span></p>
+  <p id="winPts">0 / 100</p>
 </div>
 
 <div class="card">
-<h3>💾 Save</h3>
-<p class="small">Save your Speedrun, Wins and Tag score.</p>
-<button id="save">Save Stats</button>
-<div id="msg" class="small"></div>
+  <h2>🏷 Tag Score</h2>
+  <input id="tag" type="range" min="0" max="2000" value="0">
+  <p>Score: <span id="tagValue">0</span></p>
+  <p id="tagPts">0 / 50</p>
 </div>
 
-<nav>
-<a class="navBtn" href="home.html">🏠 Home</a>
-<a class="navBtn" href="ranking.html">🏆 Rank</a>
-<a class="navBtn" href="community.html">🌍 Comm</a>
-<a class="navBtn" href="admin.html">👑 Admin</a>
-</nav>
+<div class="card">
+  <h2>🌍 Community</h2>
+  <h3 id="community">0 pt</h3>
+  <p>Monthly Community Points</p>
+</div>
+
+<div class="card">
+  <button id="saveBtn">💾 Save Stats</button>
+  <p id="msg"></p>
+</div>
 
 </div>
 
 <script type="module">
-import { auth, db, logout } from "./firebase.js";
+
+import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
   doc,
   getDoc,
-  setDoc,
-  getDocs,
-  collection
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
 const speed=document.getElementById("speed");
 const wins=document.getElementById("wins");
 const tag=document.getElementById("tag");
 
-    const speed = document.getElementById("speed");
-const wins = document.getElementById("wins");
-const tag = document.getElementById("tag");
+let communityPoints=0;
+let currentUID="";
+let currentUsername="";
 
-let communityPoints = 0;
-    
 function calc(){
 
   const s=Math.max(0,Math.min(300,
-      Math.round((1200-speed.value)/710*300)));
+    Math.round((1200-Number(speed.value))/710*300)
+  ));
 
-  const w=Math.round((wins.value/10000)*100);
+  const w=Math.round((Number(wins.value)/10000)*100);
+  const t=Math.round((Number(tag.value)/2000)*50);
 
-  const t=Math.round((tag.value/2000)*50);
+  const total=s+w+t+communityPoints;
 
-  const total = s + w + t + communityPoints;
+  document.getElementById("speedValue").textContent=speed.value;
+  document.getElementById("winsValue").textContent=wins.value;
+  document.getElementById("tagValue").textContent=tag.value;
 
   document.getElementById("speedPts").textContent=s+" / 300";
   document.getElementById("winPts").textContent=w+" / 100";
   document.getElementById("tagPts").textContent=t+" / 50";
-  document.getElementById("total").textContent=total+" / 450";
+
+  document.getElementById("total").textContent=total+" / 550";
 
   let grade="D";
   if(total>=500) grade="SS";
@@ -199,79 +155,56 @@ onAuthStateChanged(auth, async(user)=>{
     return;
   }
 
-  const username=user.email.replace("@lbns.gg","");
-  document.getElementById("username").textContent=username;
+  currentUID=user.uid;
+  currentUsername=user.email.replace("@lbns.gg","");
+
+  document.getElementById("username").textContent=currentUsername;
 
   const ref=doc(db,"users",user.uid);
   const snap=await getDoc(ref);
 
-const communityRef = doc(
-  db,
-  "community",
-  "september2026",
-  "times",
-  user.uid
-);
-
-const communitySnap = await getDoc(communityRef);
-
-if(communitySnap.exists()){
-  const t = communitySnap.data().time;
-
-  const all = await getDocs(
-    collection(db,"community","september2026","times")
-  );
-
-  let players = [];
-
-  all.forEach(d=>players.push(d.data()));
-
-  players.sort((a,b)=>a.time-b.time);
-
-  const rank =
-    players.findIndex(p=>p.username===username)+1;
-
-  communityPoints = Math.max(0,110-rank*10);
-
-  communityPoints = Math.max(0,110-rank*10);
-
-document.getElementById("community").innerText =
-  communityPoints + " pt";
-}
-    
   if(snap.exists()){
+
     const d=snap.data();
-    speed.value=d.speedrun||490;
+
+    speed.value=d.speedrun||1200;
     wins.value=d.wins||0;
     tag.value=d.tag||0;
+
+    communityPoints=d.community||0;
+
+    document.getElementById("community").textContent=
+      communityPoints+" pt";
   }
 
   calc();
 
-  document.getElementById("save").onclick=async()=>{
+});
 
-    const score=calc();
+document.getElementById("saveBtn").onclick=async()=>{
 
-    await setDoc(ref,{
-      username,
+  const score=calc();
+
+  await setDoc(
+    doc(db,"users",currentUID),
+    {
+      username:currentUsername,
       speedrun:Number(speed.value),
       wins:Number(wins.value),
       tag:Number(tag.value),
+      community:communityPoints,
       total:score.total,
       grade:score.grade
-    });
+    },
+    {merge:true}
+  );
 
-    document.getElementById("msg").textContent="Saved successfully!";
-  };
+  document.getElementById("msg").textContent=
+    "✅ Saved!";
 
-});
-
-document.getElementById("logout").onclick=async()=>{
-  await logout();
-  location.href="index.html";
 };
 
 </script>
 
 </body>
-</html>
+</html> 
