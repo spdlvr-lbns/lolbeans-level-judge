@@ -2,7 +2,9 @@ import { initializeApp } from
 "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
 import {
-  getAuth
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
 } from
 "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
@@ -16,6 +18,15 @@ import {
 } from
 "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
+
+/*
+========================================
+FIREBASE CONFIG
+========================================
+
+ここはあなたのFirebase Consoleにある
+実際の設定値を入れてください。
+*/
 
 const firebaseConfig = {
 
@@ -39,24 +50,165 @@ const firebaseConfig = {
 };
 
 
+/*
+========================================
+INITIALIZE FIREBASE
+========================================
+*/
+
 const app =
   initializeApp(firebaseConfig);
 
+
+/*
+========================================
+AUTH
+========================================
+*/
 
 const auth =
   getAuth(app);
 
 
+/*
+========================================
+FIRESTORE
+========================================
+*/
+
 const db =
   getFirestore(app);
 
+
+/*
+========================================
+STORAGE
+========================================
+*/
 
 const storage =
   getStorage(app);
 
 
+/*
+========================================
+LOGIN
+========================================
+
+index.htmlから使用
+*/
+
+async function login(
+  username,
+  password
+){
+
+  /*
+  LOLBeansのUsernameを
+  Firebase Authenticationの
+  メールアドレスとして使用
+
+  例:
+
+  username:
+  player123
+
+  ↓
+
+  player123@lbns.gg
+  */
+
+  const email =
+    convertUsernameToEmail(
+      username
+    );
+
+
+  return await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+}
+
+
+/*
+========================================
+REGISTER
+========================================
+
+index.htmlから使用
+*/
+
+async function register(
+  username,
+  password
+){
+
+  const email =
+    convertUsernameToEmail(
+      username
+    );
+
+
+  return await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+}
+
+
+/*
+========================================
+USERNAME → EMAIL
+========================================
+*/
+
+function convertUsernameToEmail(
+  username
+){
+
+  const name =
+    String(username)
+      .trim()
+      .toLowerCase();
+
+
+  if(!name){
+
+    throw new Error(
+      "Please enter a username."
+    );
+
+  }
+
+
+  /*
+  Firebase用の仮想メールアドレス
+
+  username
+  ↓
+  username@lbns.gg
+  */
+
+  return name + "@lbns.gg";
+
+}
+
+
+/*
+========================================
+EXPORT
+========================================
+*/
+
 export {
   auth,
   db,
-  storage
+  storage,
+  login,
+  register
 };
