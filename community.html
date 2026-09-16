@@ -129,6 +129,10 @@ async function loadRanking(){
 });
 
 players.forEach((p,i)=>{
+
+  p.rank = i + 1;
+  p.points = Math.max(0,110-p.rank*10);
+
   ranking.innerHTML += `
     <tr>
       <td>${p.rank}</td>
@@ -137,6 +141,7 @@ players.forEach((p,i)=>{
       <td>${p.points}</td>
     </tr>
   `;
+
 });
 
 }
