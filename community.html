@@ -186,6 +186,15 @@ document.getElementById("submitBtn").onclick=async()=>{
 
   const t=Number(document.getElementById("time").value);
 
+if(screenshot.files.length===0){
+
+  msg.textContent =
+    "Screenshot is required.";
+
+  return;
+
+}
+  
   if(!t){
     msg.textContent="Enter a valid time.";
     return;
