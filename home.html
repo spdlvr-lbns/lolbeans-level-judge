@@ -193,7 +193,40 @@ onAuthStateChanged(auth, async(user)=>{
 
   const ref=doc(db,"users",user.uid);
   const snap=await getDoc(ref);
+let communityPoints = 0;
 
+const communityRef = doc(
+  db,
+  "community",
+  "september2026",
+  "times",
+  user.uid
+);
+
+const communitySnap = await getDoc(communityRef);
+
+if(communitySnap.exists()){
+  const t = communitySnap.data().time;
+
+  const all = await getDocs(
+    collection(db,"community","september2026","times")
+  );
+
+  let players = [];
+
+  all.forEach(d=>players.push(d.data()));
+
+  players.sort((a,b)=>a.time-b.time);
+
+  const rank =
+    players.findIndex(p=>p.username===username)+1;
+
+  communityPoints = Math.max(0,110-rank*10);
+
+  document.getElementById("community").innerText =
+    communityPoints;
+}
+    
   if(snap.exists()){
     const d=snap.data();
     speed.value=d.speedrun||490;
