@@ -124,7 +124,19 @@ import {
 
 const ranking=document.getElementById("ranking");
 const msg=document.getElementById("msg");
+const screenshot =
+  document.getElementById("screenshot");
 
+screenshot.onchange = () => {
+
+  if(screenshot.files.length){
+    document.getElementById("fileName")
+      .textContent =
+      "📷 " + screenshot.files[0].name;
+  }
+
+};
+  
 async function loadRanking(){
 
   ranking.innerHTML="";
