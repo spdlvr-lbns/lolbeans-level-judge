@@ -84,8 +84,14 @@ button {
 <script type="module">
 
 import {
-  loginWithGoogle
+  loginWithGoogle,
+  db
 } from "./firebase.js";
+
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
 const msg =
@@ -104,13 +110,45 @@ document
       const result =
         await loginWithGoogle();
 
+      const user =
+        result.user;
+
+
       console.log(
-        "Logged in:",
-        result.user.email
+        "Logged in successfully"
       );
 
-      location.href =
-        "home.html";
+
+      /*
+        Check whether this user
+        already has a username
+      */
+
+      const userRef =
+        doc(db, "users", user.uid);
+
+      const userSnap =
+        await getDoc(userRef);
+
+
+      if(
+        userSnap.exists() &&
+        userSnap.data().username
+      ){
+
+        // Username already exists
+        location.href =
+          "home.html";
+
+      }
+
+      else {
+
+        // First login
+        location.href =
+          "username.html";
+
+      }
 
     }
 
