@@ -59,10 +59,6 @@ button:hover{
   background:#6d28d9;
 }
 
-button.danger{
-  background:#dc2626;
-}
-
 button.approve{
   background:#16a34a;
 }
@@ -113,10 +109,6 @@ button.reject{
 .rejected{
   background:#7f1d1d;
   color:#fecaca;
-}
-
-.message{
-  margin-top:10px;
 }
 
 .success{
@@ -226,6 +218,27 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
+/*
+========================================
+ADMIN EMAILS
+========================================
+
+ここに管理者として使うGmailを3つ入れる。
+
+必ず実際のメールアドレスに変更してください。
+*/
+
+const ADMIN_EMAILS = [
+
+  "spdlvr83@gmail.com",
+
+  "grgt1462@gmail.com",
+
+  "ここに3つ目のGmail@gmail.com"
+
+];
+
+
 const eventsDiv =
   document.getElementById("events");
 
@@ -240,24 +253,9 @@ const createMessage =
 ========================================
 ADMIN CHECK
 ========================================
-
-ここではFirebase Authenticationの
-メールアドレスで簡易チェック。
-
-後でFirestoreのadmin roleに変更可能。
 */
 
-const ADMIN_EMAILS = [
-  "spdlvr83@gmail.com",
-  "grgt1462@gmail.com",
-  "ninjasgmail"
-];
-
-
-function checkAdmin(){
-
-  const user =
-    auth.currentUser;
+function checkAdmin(user){
 
   if(!user){
 
@@ -268,14 +266,26 @@ function checkAdmin(){
 
   }
 
-  if(user.email !== ADMIN_EMAIL){
+
+  /*
+  メールアドレスが
+  ADMIN_EMAILSの中にあるか確認
+  */
+
+  if(
+    !ADMIN_EMAILS.includes(
+      user.email
+    )
+  ){
 
     document.body.innerHTML =
-      "<h1>Access denied.</h1>";
+      "<h1>Access denied.</h1>" +
+      "<p>This account is not an administrator.</p>";
 
     return false;
 
   }
+
 
   return true;
 
@@ -293,20 +303,29 @@ document
 .onclick = async()=>{
 
   const name =
-    document.getElementById("eventName")
-    .value.trim();
+    document
+      .getElementById("eventName")
+      .value
+      .trim();
+
 
   const map =
-    document.getElementById("eventMap")
-    .value.trim();
+    document
+      .getElementById("eventMap")
+      .value
+      .trim();
+
 
   const startValue =
-    document.getElementById("startAt")
-    .value;
+    document
+      .getElementById("startAt")
+      .value;
+
 
   const endValue =
-    document.getElementById("endAt")
-    .value;
+    document
+      .getElementById("endAt")
+      .value;
 
 
   if(
@@ -330,6 +349,7 @@ document
   const start =
     new Date(startValue).getTime();
 
+
   const end =
     new Date(endValue).getTime();
 
@@ -347,55 +367,82 @@ document
   }
 
 
-  const eventId =
-    "event_" + Date.now();
+  try{
+
+    const eventId =
+      "event_" + Date.now();
 
 
-  await setDoc(
+    await setDoc(
 
-    doc(db,"events",eventId),
+      doc(
+        db,
+        "events",
+        eventId
+      ),
 
-    {
+      {
 
-      name,
+        name:name,
 
-      map,
+        map:map,
 
-      startAt:start,
+        startAt:start,
 
-      endAt:end,
+        endAt:end,
 
-      createdAt:Date.now(),
+        createdAt:Date.now(),
 
-      createdBy:
-        auth.currentUser.uid
+        createdBy:
+          auth.currentUser.uid
 
-    }
+      }
 
-  );
-
-
-  createMessage.textContent =
-    "✅ Event created!";
-
-  createMessage.className =
-    "success";
+    );
 
 
-  document.getElementById("eventName")
-    .value = "";
+    createMessage.textContent =
+      "✅ Event created!";
 
-  document.getElementById("eventMap")
-    .value = "";
-
-  document.getElementById("startAt")
-    .value = "";
-
-  document.getElementById("endAt")
-    .value = "";
+    createMessage.className =
+      "success";
 
 
-  loadEvents();
+    document
+      .getElementById("eventName")
+      .value = "";
+
+
+    document
+      .getElementById("eventMap")
+      .value = "";
+
+
+    document
+      .getElementById("startAt")
+      .value = "";
+
+
+    document
+      .getElementById("endAt")
+      .value = "";
+
+
+    await loadEvents();
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    createMessage.textContent =
+      "❌ Failed to create event: " +
+      error.message;
+
+    createMessage.className =
+      "error";
+
+  }
 
 };
 
@@ -408,84 +455,102 @@ LOAD EVENTS
 
 async function loadEvents(){
 
-  const snap =
-    await getDocs(
-      collection(db,"events")
-    );
+  try{
 
-  eventsDiv.innerHTML = "";
-
-
-  const now =
-    Date.now();
+    const snap =
+      await getDocs(
+        collection(db,"events")
+      );
 
 
-  snap.forEach(d=>{
-
-    const e =
-      d.data();
-
-    const start =
-      Number(e.startAt);
-
-    const end =
-      Number(e.endAt);
+    eventsDiv.innerHTML = "";
 
 
-    let status;
+    const now =
+      Date.now();
 
-    if(now < start){
 
-      status =
-        '<span class="status pending">NOT STARTED</span>';
+    snap.forEach(d=>{
+
+      const e =
+        d.data();
+
+
+      const start =
+        Number(e.startAt);
+
+
+      const end =
+        Number(e.endAt);
+
+
+      let status;
+
+
+      if(now < start){
+
+        status =
+          '<span class="status pending">NOT STARTED</span>';
+
+      }
+
+      else if(now < end){
+
+        status =
+          '<span class="status approved">ACTIVE</span>';
+
+      }
+
+      else{
+
+        status =
+          '<span class="status rejected">ENDED</span>';
+
+      }
+
+
+      eventsDiv.innerHTML += `
+
+        <div class="event">
+
+          <h3>
+            ${escapeHTML(e.name)}
+          </h3>
+
+          <p>
+            🗺️ ${escapeHTML(e.map)}
+          </p>
+
+          <p>
+            📅
+            ${formatDate(start)}
+            →
+            ${formatDate(end)}
+          </p>
+
+          ${status}
+
+        </div>
+
+      `;
+
+    });
+
+
+    if(!snap.size){
+
+      eventsDiv.textContent =
+        "No events.";
 
     }
-    else if(now < end){
 
-      status =
-        '<span class="status approved">ACTIVE</span>';
+  }
+  catch(error){
 
-    }
-    else{
+    console.error(error);
 
-      status =
-        '<span class="status rejected">ENDED</span>';
-
-    }
-
-
-    eventsDiv.innerHTML += `
-
-      <div class="event">
-
-        <h3>
-          ${escapeHTML(e.name)}
-        </h3>
-
-        <p>
-          🗺️ ${escapeHTML(e.map)}
-        </p>
-
-        <p>
-          📅
-          ${formatDate(start)}
-          →
-          ${formatDate(end)}
-        </p>
-
-        ${status}
-
-      </div>
-
-    `;
-
-  });
-
-
-  if(!snap.size){
-
-    eventsDiv.textContent =
-      "No events.";
+    eventsDiv.innerHTML =
+      "<p>Failed to load events.</p>";
 
   }
 
@@ -500,136 +565,161 @@ LOAD SUBMISSIONS
 
 async function loadSubmissions(){
 
-  const eventSnap =
-    await getDocs(
-      collection(db,"events")
-    );
+  try{
 
-
-  submissionsDiv.innerHTML = "";
-
-
-  let count = 0;
-
-
-  for(const eventDoc of eventSnap.docs){
-
-    const eventId =
-      eventDoc.id;
-
-    const event =
-      eventDoc.data();
-
-
-    const snap =
+    const eventSnap =
       await getDocs(
-        collection(
-          db,
-          "community",
-          eventId,
-          "times"
-        )
+        collection(db,"events")
       );
 
 
-    for(const subDoc of snap.docs){
-
-      const sub =
-        subDoc.data();
+    submissionsDiv.innerHTML = "";
 
 
-      if(sub.status !== "pending"){
+    let count = 0;
 
-        continue;
+
+    for(
+      const eventDoc
+      of eventSnap.docs
+    ){
+
+      const eventId =
+        eventDoc.id;
+
+
+      const event =
+        eventDoc.data();
+
+
+      const snap =
+        await getDocs(
+
+          collection(
+            db,
+            "community",
+            eventId,
+            "times"
+          )
+
+        );
+
+
+      for(
+        const subDoc
+        of snap.docs
+      ){
+
+        const sub =
+          subDoc.data();
+
+
+        if(
+          sub.status !== "pending"
+        ){
+
+          continue;
+
+        }
+
+
+        count++;
+
+
+        submissionsDiv.innerHTML += `
+
+          <div class="submission">
+
+            <h3>
+              ${escapeHTML(sub.username)}
+            </h3>
+
+            <p>
+              Event:
+              ${escapeHTML(event.name)}
+            </p>
+
+            <p>
+              Time:
+              <strong>
+                ${Number(sub.time).toFixed(3)}
+              </strong>
+            </p>
+
+            <p>
+              Submitted:
+              ${formatDate(sub.submittedAt)}
+            </p>
+
+
+            ${
+              sub.screenshotURL
+
+              ?
+
+              `
+              <img
+                class="screenshot"
+                src="${escapeHTML(
+                  sub.screenshotURL
+                )}"
+              >
+              `
+
+              :
+
+              ""
+            }
+
+
+            <button
+              class="approve"
+              onclick="
+                approveSubmission(
+                  '${eventId}',
+                  '${subDoc.id}'
+                )
+              "
+            >
+              ✅ Approve
+            </button>
+
+
+            <button
+              class="reject"
+              onclick="
+                rejectSubmission(
+                  '${eventId}',
+                  '${subDoc.id}'
+                )
+              "
+            >
+              ❌ Reject
+            </button>
+
+          </div>
+
+        `;
 
       }
 
-
-      count++;
-
-
-      submissionsDiv.innerHTML += `
-
-        <div class="submission">
-
-          <h3>
-            ${escapeHTML(sub.username)}
-          </h3>
-
-          <p>
-            Event:
-            ${escapeHTML(event.name)}
-          </p>
-
-          <p>
-            Time:
-            <strong>
-              ${Number(sub.time).toFixed(3)}
-            </strong>
-          </p>
-
-          <p>
-            Submitted:
-            ${formatDate(sub.submittedAt)}
-          </p>
-
-          ${
-            sub.screenshotURL
-
-            ?
-
-            `
-            <img
-              class="screenshot"
-              src="${sub.screenshotURL}"
-            >
-            `
-
-            :
-
-            ""
-          }
+    }
 
 
-          <button
-            class="approve"
-            onclick="
-              approveSubmission(
-                '${eventId}',
-                '${subDoc.id}',
-                ${sub.time}
-              )
-            "
-          >
-            ✅ Approve
-          </button>
+    if(count === 0){
 
-
-          <button
-            class="reject"
-            onclick="
-              rejectSubmission(
-                '${eventId}',
-                '${subDoc.id}'
-              )
-            "
-          >
-            ❌ Reject
-          </button>
-
-        </div>
-
-      `;
+      submissionsDiv.innerHTML =
+        "<p>No pending submissions.</p>";
 
     }
 
   }
+  catch(error){
 
-
-  if(count === 0){
+    console.error(error);
 
     submissionsDiv.innerHTML =
-      "<p>No pending submissions.</p>";
+      "<p>Failed to load submissions.</p>";
 
   }
 
@@ -645,154 +735,234 @@ APPROVE
 window.approveSubmission =
 async function(
   eventId,
-  userId,
-  time
+  userId
 ){
 
-  const subRef =
-    doc(
-      db,
-      "community",
-      eventId,
-      "times",
-      userId
-    );
+  try{
 
-
-  const subSnap =
-    await getDoc(subRef);
-
-
-  if(!subSnap.exists()){
-
-    alert("Submission not found.");
-
-    return;
-
-  }
-
-
-  const sub =
-    subSnap.data();
-
-
-  /*
-  APPROVED
-  */
-
-  await updateDoc(
-    subRef,
-    {
-      status:"approved",
-      approvedAt:Date.now(),
-      approvedBy:
-        auth.currentUser.uid
-    }
-  );
-
-
-  /*
-  ユーザーのポイント更新
-  */
-
-  const userRef =
-    doc(
-      db,
-      "users",
-      userId
-    );
-
-
-  const userSnap =
-    await getDoc(userRef);
-
-
-  let currentPoints = 0;
-
-
-  if(userSnap.exists()){
-
-    currentPoints =
-      Number(
-        userSnap.data().community || 0
-      );
-
-  }
-
-
-  /*
-  現在のイベント内順位を計算
-  */
-
-  const allSnap =
-    await getDocs(
-      collection(
+    const subRef =
+      doc(
         db,
         "community",
         eventId,
-        "times"
-      )
+        "times",
+        userId
+      );
+
+
+    const subSnap =
+      await getDoc(subRef);
+
+
+    if(!subSnap.exists()){
+
+      alert(
+        "Submission not found."
+      );
+
+      return;
+
+    }
+
+
+    const sub =
+      subSnap.data();
+
+
+    /*
+    すでに処理済みなら停止
+    */
+
+    if(
+      sub.status !== "pending"
+    ){
+
+      alert(
+        "This submission has already been processed."
+      );
+
+      return;
+
+    }
+
+
+    /*
+    APPROVED
+    */
+
+    await updateDoc(
+
+      subRef,
+
+      {
+
+        status:"approved",
+
+        approvedAt:
+          Date.now(),
+
+        approvedBy:
+          auth.currentUser.uid
+
+      }
+
     );
 
 
-  let approved = [];
+    /*
+    ユーザーのポイント更新
+    */
+
+    const userRef =
+      doc(
+        db,
+        "users",
+        userId
+      );
 
 
-  allSnap.forEach(d=>{
+    const userSnap =
+      await getDoc(userRef);
 
-    const data =
-      d.data();
 
-    if(
-      data.status === "approved"
-    ){
+    let currentPoints = 0;
 
-      approved.push(data);
+
+    if(userSnap.exists()){
+
+      currentPoints =
+        Number(
+          userSnap
+            .data()
+            .community || 0
+        );
 
     }
 
-  });
+
+    /*
+    現在のイベント内順位
+    */
+
+    const allSnap =
+      await getDocs(
+
+        collection(
+          db,
+          "community",
+          eventId,
+          "times"
+        )
+
+      );
 
 
-  approved.sort(
-    (a,b)=>
-      Number(a.time)-Number(b.time)
-  );
+    let approved = [];
 
 
-  const position =
-    approved.findIndex(
-      p =>
-        p.username === sub.username &&
-        Number(p.time) === Number(sub.time)
-    ) + 1;
+    allSnap.forEach(d=>{
+
+      const data =
+        d.data();
 
 
-  const points =
-    calculatePoints(position);
+      if(
+        data.status === "approved"
+      ){
+
+        approved.push({
+
+          id:d.id,
+
+          ...data
+
+        });
+
+      }
+
+    });
 
 
-  await setDoc(
+    approved.sort(
 
-    userRef,
+      (a,b)=>{
 
-    {
+        const timeDifference =
+          Number(a.time) -
+          Number(b.time);
 
-      username:sub.username,
+        if(
+          timeDifference !== 0
+        ){
 
-      community:
-        currentPoints + points
+          return timeDifference;
 
-    },
-
-    {
-      merge:true
-    }
-
-  );
+        }
 
 
-  await loadSubmissions();
+        return String(a.id)
+          .localeCompare(
+            String(b.id)
+          );
+
+      }
+
+    );
+
+
+    /*
+    今回承認したユーザーの順位
+    */
+
+    const position =
+      approved.findIndex(
+
+        p =>
+          p.id === userId
+
+      ) + 1;
+
+
+    const points =
+      calculatePoints(
+        position
+      );
+
+
+    await setDoc(
+
+      userRef,
+
+      {
+
+        username:
+          sub.username,
+
+        community:
+          currentPoints + points
+
+      },
+
+      {
+        merge:true
+      }
+
+    );
+
+
+    await loadSubmissions();
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    alert(
+      "Failed to approve submission: " +
+      error.message
+    );
+
+  }
 
 };
 
@@ -809,31 +979,86 @@ async function(
   userId
 ){
 
-  await updateDoc(
+  try{
 
-    doc(
-      db,
-      "community",
-      eventId,
-      "times",
-      userId
-    ),
+    const submissionRef =
+      doc(
+        db,
+        "community",
+        eventId,
+        "times",
+        userId
+      );
 
-    {
 
-      status:"rejected",
+    const submissionSnap =
+      await getDoc(
+        submissionRef
+      );
 
-      rejectedAt:Date.now(),
 
-      rejectedBy:
-        auth.currentUser.uid
+    if(
+      !submissionSnap.exists()
+    ){
+
+      alert(
+        "Submission not found."
+      );
+
+      return;
 
     }
 
-  );
+
+    const submission =
+      submissionSnap.data();
 
 
-  await loadSubmissions();
+    if(
+      submission.status !== "pending"
+    ){
+
+      alert(
+        "This submission has already been processed."
+      );
+
+      return;
+
+    }
+
+
+    await updateDoc(
+
+      submissionRef,
+
+      {
+
+        status:"rejected",
+
+        rejectedAt:
+          Date.now(),
+
+        rejectedBy:
+          auth.currentUser.uid
+
+      }
+
+    );
+
+
+    await loadSubmissions();
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    alert(
+      "Failed to reject submission: " +
+      error.message
+    );
+
+  }
 
 };
 
@@ -849,17 +1074,27 @@ function calculatePoints(position){
   const points = {
 
     1:100,
+
     2:90,
+
     3:80,
+
     4:70,
+
     5:60,
+
     6:50,
+
     7:40,
+
     8:30,
+
     9:20,
+
     10:10
 
   };
+
 
   return points[position] || 0;
 
@@ -868,40 +1103,77 @@ function calculatePoints(position){
 
 /*
 ========================================
-FORMAT
+FORMAT DATE
 ========================================
 */
 
 function formatDate(timestamp){
 
+  if(!timestamp){
+
+    return "-";
+
+  }
+
+
   return new Date(timestamp)
     .toLocaleString(
+
       "ja-JP",
+
       {
+
         year:"numeric",
+
         month:"2-digit",
+
         day:"2-digit",
+
         hour:"2-digit",
+
         minute:"2-digit"
+
       }
+
     );
 
 }
 
 
+/*
+========================================
+ESCAPE HTML
+========================================
+*/
+
 function escapeHTML(value){
 
   return String(value)
 
-    .replaceAll("&","&amp;")
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
 
-    .replaceAll("<","&lt;")
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
 
-    .replaceAll(">","&gt;")
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
 
-    .replaceAll('"',"&quot;")
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
 
-    .replaceAll("'","&#039;");
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -913,7 +1185,12 @@ START
 */
 
 auth.onAuthStateChanged(
+
   async user=>{
+
+    /*
+    ログイン確認
+    */
 
     if(!user){
 
@@ -925,23 +1202,35 @@ auth.onAuthStateChanged(
     }
 
 
+    /*
+    管理者確認
+    */
+
     if(
-      user.email !== ADMIN_EMAIL
+      !ADMIN_EMAILS.includes(
+        user.email
+      )
     ){
 
       document.body.innerHTML =
-        "<h1>Access denied.</h1>";
+        "<h1>Access denied.</h1>" +
+        "<p>This account is not an administrator.</p>";
 
       return;
 
     }
 
 
+    /*
+    管理者なら読み込み
+    */
+
     await loadEvents();
 
     await loadSubmissions();
 
   }
+
 );
 
 </script>
