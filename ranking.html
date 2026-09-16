@@ -119,8 +119,25 @@ snap.forEach(doc=>{
   });
 });
 
-players.sort((a,b)=>b.total-a.total);
+if(currentMode==="overall"){
+  players.sort((a,b)=>b.total-a.total);
+}
 
+if(currentMode==="speed"){
+  players.sort((a,b)=>a.speedrun-b.speedrun);
+}
+
+if(currentMode==="battle"){
+  players.sort((a,b)=>b.wins-a.wins);
+}
+
+if(currentMode==="community"){
+  players.sort((a,b)=>b.community-a.community);
+}
+
+if(currentMode==="tag"){
+  players.sort((a,b)=>b.tag-a.tag);
+}
 players.forEach((p,i)=>{
   tbody.innerHTML+=`
   <tr>
