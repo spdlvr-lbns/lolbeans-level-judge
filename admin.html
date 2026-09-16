@@ -72,7 +72,7 @@ th,td{
 
   <input id="eventName" placeholder="September Challenge">
 
-  <input id="eventMap" placeholder="Speeder's Speedrun 2">
+  <input id="eventMap" placeholder="level name">
 
   <label>Start</label>
   <input id="startDate" type="date">
@@ -134,6 +134,31 @@ onAuthStateChanged(auth, (user) => {
 
   document.getElementById("panel").classList.remove("hidden");
   load();
+document.getElementById("createEvent").addEventListener("click", async () => {
+
+  const name = document.getElementById("eventName").value;
+  const map = document.getElementById("eventMap").value;
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+
+  if (!name || !map) {
+    document.getElementById("eventMsg").textContent = "Enter event name and map";
+    return;
+  }
+
+  const id = name.toLowerCase().replace(/\s+/g,"-");
+
+  await setDoc(doc(db,"events",id),{
+    name,
+    map,
+    start,
+    end,
+    active:true
+  });
+
+  document.getElementById("eventMsg").textContent = "✅ Event Created!";
+});
+  
 document
 .getElementById("createEvent")
 .addEventListener("click", async()=>{
