@@ -63,8 +63,21 @@ button.approve{
   background:#16a34a;
 }
 
+button.approve:hover{
+  background:#15803d;
+}
+
 button.reject{
   background:#dc2626;
+}
+
+button.reject:hover{
+  background:#b91c1c;
+}
+
+button:disabled{
+  background:#475569;
+  cursor:not-allowed;
 }
 
 .event{
@@ -86,6 +99,7 @@ button.reject{
   max-height:400px;
   border-radius:10px;
   margin:10px 0;
+  display:block;
 }
 
 .status{
@@ -119,6 +133,18 @@ button.reject{
   color:#fca5a5;
 }
 
+.info{
+  color:#93c5fd;
+}
+
+.admin-email{
+  background:#334155;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:14px;
+}
+
 </style>
 
 </head>
@@ -130,10 +156,29 @@ button.reject{
 
 <h1>⚙️ Community Admin</h1>
 
-<a href="Community.html">
+<a href="Community.html" style="color:#93c5fd;">
 ← Community Challenge
 </a>
 
+
+<!-- ================================ -->
+<!-- LOGIN STATUS -->
+<!-- ================================ -->
+
+<div class="card">
+
+<h2>👤 Admin Account</h2>
+
+<div id="adminStatus">
+Checking login...
+</div>
+
+</div>
+
+
+<!-- ================================ -->
+<!-- CREATE EVENT -->
+<!-- ================================ -->
 
 <div class="card">
 
@@ -180,6 +225,10 @@ Create Event
 </div>
 
 
+<!-- ================================ -->
+<!-- EVENTS -->
+<!-- ================================ -->
+
 <div class="card">
 
 <h2>📅 Events</h2>
@@ -190,6 +239,10 @@ Loading...
 
 </div>
 
+
+<!-- ================================ -->
+<!-- SUBMISSIONS -->
+<!-- ================================ -->
 
 <div class="card">
 
@@ -206,7 +259,23 @@ Loading...
 
 <script type="module">
 
-import { auth, db } from "./firebase.js";
+
+/*
+========================================
+FIREBASE
+========================================
+*/
+
+import {
+  auth,
+  db
+} from "./firebase.js";
+
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
 
 import {
   collection,
@@ -239,14 +308,39 @@ const ADMIN_EMAILS = [
 ];
 
 
+/*
+========================================
+ELEMENTS
+========================================
+*/
+
 const eventsDiv =
   document.getElementById("events");
+
 
 const submissionsDiv =
   document.getElementById("submissions");
 
+
 const createMessage =
   document.getElementById("createMessage");
+
+
+const adminStatus =
+  document.getElementById("adminStatus");
+
+
+const createButton =
+  document.getElementById("createEvent");
+
+
+/*
+========================================
+CURRENT ADMIN
+========================================
+*/
+
+let currentAdmin = null;
 
 
 /*
@@ -257,10 +351,11 @@ ADMIN CHECK
 
 function checkAdmin(user){
 
-  if(!user){
+  /*
+  未ログイン
+  */
 
-    document.body.innerHTML =
-      "<h1>Please login first.</h1>";
+  if(!user){
 
     return false;
 
@@ -268,26 +363,28 @@ function checkAdmin(user){
 
 
   /*
-  メールアドレスが
-  ADMIN_EMAILSの中にあるか確認
+  メールアドレスを小文字化
   */
 
-  if(
-    !ADMIN_EMAILS.includes(
-      user.email
-    )
-  ){
-
-    document.body.innerHTML =
-      "<h1>Access denied.</h1>" +
-      "<p>This account is not an administrator.</p>";
-
-    return false;
-
-  }
+  const email =
+    String(user.email || "")
+      .toLowerCase()
+      .trim();
 
 
-  return true;
+  /*
+  管理者リストも小文字化して比較
+  */
+
+  const isAdmin =
+    ADMIN_EMAILS
+      .map(email =>
+        email.toLowerCase().trim()
+      )
+      .includes(email);
+
+
+  return isAdmin;
 
 }
 
@@ -298,9 +395,24 @@ CREATE EVENT
 ========================================
 */
 
-document
-.getElementById("createEvent")
-.onclick = async()=>{
+createButton.onclick = async()=>{
+
+  /*
+  管理者ログイン確認
+  */
+
+  if(!currentAdmin){
+
+    createMessage.textContent =
+      "Please login as an administrator.";
+
+    createMessage.className =
+      "error";
+
+    return;
+
+  }
+
 
   const name =
     document
@@ -328,6 +440,10 @@ document
       .value;
 
 
+  /*
+  入力確認
+  */
+
   if(
     !name ||
     !map ||
@@ -346,12 +462,36 @@ document
   }
 
 
+  /*
+  日付をTimestampに変換
+  */
+
   const start =
     new Date(startValue).getTime();
 
 
   const end =
     new Date(endValue).getTime();
+
+
+  /*
+  日付確認
+  */
+
+  if(
+    Number.isNaN(start) ||
+    Number.isNaN(end)
+  ){
+
+    createMessage.textContent =
+      "Invalid date.";
+
+    createMessage.className =
+      "error";
+
+    return;
+
+  }
 
 
   if(end <= start){
@@ -367,11 +507,29 @@ document
   }
 
 
+  /*
+  作成中
+  */
+
+  createButton.disabled = true;
+
+  createButton.textContent =
+    "Creating...";
+
+
   try{
+
+    /*
+    イベントID作成
+    */
 
     const eventId =
       "event_" + Date.now();
 
+
+    /*
+    イベント保存
+    */
 
     await setDoc(
 
@@ -394,19 +552,30 @@ document
         createdAt:Date.now(),
 
         createdBy:
-          auth.currentUser.uid
+          currentAdmin.uid,
+
+        createdByEmail:
+          currentAdmin.email
 
       }
 
     );
 
 
+    /*
+    成功
+    */
+
     createMessage.textContent =
-      "✅ Event created!";
+      "✅ Event created successfully!";
 
     createMessage.className =
       "success";
 
+
+    /*
+    フォームクリア
+    */
 
     document
       .getElementById("eventName")
@@ -428,12 +597,21 @@ document
       .value = "";
 
 
+    /*
+    イベント一覧更新
+    */
+
     await loadEvents();
 
   }
+
   catch(error){
 
-    console.error(error);
+    console.error(
+      "Create event error:",
+      error
+    );
+
 
     createMessage.textContent =
       "❌ Failed to create event: " +
@@ -441,6 +619,15 @@ document
 
     createMessage.className =
       "error";
+
+  }
+
+  finally{
+
+    createButton.disabled = false;
+
+    createButton.textContent =
+      "Create Event";
 
   }
 
@@ -470,11 +657,40 @@ async function loadEvents(){
       Date.now();
 
 
+    /*
+    イベントを日付順に並べる
+    */
+
+    const events = [];
+
+
     snap.forEach(d=>{
 
-      const e =
-        d.data();
+      events.push({
 
+        id:d.id,
+
+        ...d.data()
+
+      });
+
+    });
+
+
+    events.sort(
+
+      (a,b)=>
+        Number(a.startAt) -
+        Number(b.startAt)
+
+    );
+
+
+    /*
+    イベント表示
+    */
+
+    events.forEach(e=>{
 
       const start =
         Number(e.startAt);
@@ -487,6 +703,10 @@ async function loadEvents(){
       let status;
 
 
+      /*
+      NOT STARTED
+      */
+
       if(now < start){
 
         status =
@@ -494,12 +714,22 @@ async function loadEvents(){
 
       }
 
+
+      /*
+      ACTIVE
+      */
+
       else if(now < end){
 
         status =
           '<span class="status approved">ACTIVE</span>';
 
       }
+
+
+      /*
+      ENDED
+      */
 
       else{
 
@@ -537,7 +767,11 @@ async function loadEvents(){
     });
 
 
-    if(!snap.size){
+    /*
+    イベントなし
+    */
+
+    if(events.length === 0){
 
       eventsDiv.textContent =
         "No events.";
@@ -545,12 +779,17 @@ async function loadEvents(){
     }
 
   }
+
   catch(error){
 
-    console.error(error);
+    console.error(
+      "Load events error:",
+      error
+    );
+
 
     eventsDiv.innerHTML =
-      "<p>Failed to load events.</p>";
+      "<p class='error'>Failed to load events.</p>";
 
   }
 
@@ -579,6 +818,10 @@ async function loadSubmissions(){
     let count = 0;
 
 
+    /*
+    各イベントを確認
+    */
+
     for(
       const eventDoc
       of eventSnap.docs
@@ -605,6 +848,10 @@ async function loadSubmissions(){
         );
 
 
+      /*
+      各Submission
+      */
+
       for(
         const subDoc
         of snap.docs
@@ -613,6 +860,10 @@ async function loadSubmissions(){
         const sub =
           subDoc.data();
 
+
+        /*
+        Pending以外は表示しない
+        */
 
         if(
           sub.status !== "pending"
@@ -631,12 +882,16 @@ async function loadSubmissions(){
           <div class="submission">
 
             <h3>
-              ${escapeHTML(sub.username)}
+              ${escapeHTML(
+                sub.username || "Unknown user"
+              )}
             </h3>
 
             <p>
               Event:
-              ${escapeHTML(event.name)}
+              ${escapeHTML(
+                event.name || "Unknown event"
+              )}
             </p>
 
             <p>
@@ -648,26 +903,24 @@ async function loadSubmissions(){
 
             <p>
               Submitted:
-              ${formatDate(sub.submittedAt)}
+              ${formatDate(
+                sub.submittedAt
+              )}
             </p>
-
 
             ${
               sub.screenshotURL
-
               ?
-
               `
               <img
                 class="screenshot"
                 src="${escapeHTML(
                   sub.screenshotURL
                 )}"
+                alt="Submission screenshot"
               >
               `
-
               :
-
               ""
             }
 
@@ -706,6 +959,10 @@ async function loadSubmissions(){
     }
 
 
+    /*
+    Pendingなし
+    */
+
     if(count === 0){
 
       submissionsDiv.innerHTML =
@@ -714,12 +971,17 @@ async function loadSubmissions(){
     }
 
   }
+
   catch(error){
 
-    console.error(error);
+    console.error(
+      "Load submissions error:",
+      error
+    );
+
 
     submissionsDiv.innerHTML =
-      "<p>Failed to load submissions.</p>";
+      "<p class='error'>Failed to load submissions.</p>";
 
   }
 
@@ -738,7 +1000,26 @@ async function(
   userId
 ){
 
+  /*
+  管理者確認
+  */
+
+  if(!currentAdmin){
+
+    alert(
+      "You must be logged in as an administrator."
+    );
+
+    return;
+
+  }
+
+
   try{
+
+    /*
+    Submission
+    */
 
     const subRef =
       doc(
@@ -802,7 +1083,7 @@ async function(
           Date.now(),
 
         approvedBy:
-          auth.currentUser.uid
+          currentAdmin.uid
 
       }
 
@@ -810,7 +1091,7 @@ async function(
 
 
     /*
-    ユーザーのポイント更新
+    ユーザーのポイント
     */
 
     const userRef =
@@ -841,7 +1122,7 @@ async function(
 
 
     /*
-    現在のイベント内順位
+    イベント内のApprovedを取得
     */
 
     const allSnap =
@@ -883,6 +1164,10 @@ async function(
     });
 
 
+    /*
+    タイム順
+    */
+
     approved.sort(
 
       (a,b)=>{
@@ -890,6 +1175,7 @@ async function(
         const timeDifference =
           Number(a.time) -
           Number(b.time);
+
 
         if(
           timeDifference !== 0
@@ -923,11 +1209,19 @@ async function(
       ) + 1;
 
 
+    /*
+    ポイント計算
+    */
+
     const points =
       calculatePoints(
         position
       );
 
+
+    /*
+    ユーザーにポイント加算
+    */
 
     await setDoc(
 
@@ -944,21 +1238,37 @@ async function(
       },
 
       {
+
         merge:true
+
       }
 
     );
 
 
+    /*
+    表示更新
+    */
+
     await loadSubmissions();
 
-  }
-  catch(error){
-
-    console.error(error);
 
     alert(
-      "Failed to approve submission: " +
+      `Approved!\nPosition: ${position}\nPoints: +${points}`
+    );
+
+  }
+
+  catch(error){
+
+    console.error(
+      "Approve error:",
+      error
+    );
+
+
+    alert(
+      "Failed to approve submission:\n" +
       error.message
     );
 
@@ -978,6 +1288,21 @@ async function(
   eventId,
   userId
 ){
+
+  /*
+  管理者確認
+  */
+
+  if(!currentAdmin){
+
+    alert(
+      "You must be logged in as an administrator."
+    );
+
+    return;
+
+  }
+
 
   try{
 
@@ -1014,6 +1339,10 @@ async function(
       submissionSnap.data();
 
 
+    /*
+    すでに処理済み
+    */
+
     if(
       submission.status !== "pending"
     ){
@@ -1027,6 +1356,10 @@ async function(
     }
 
 
+    /*
+    REJECTED
+    */
+
     await updateDoc(
 
       submissionRef,
@@ -1039,22 +1372,36 @@ async function(
           Date.now(),
 
         rejectedBy:
-          auth.currentUser.uid
+          currentAdmin.uid
 
       }
 
     );
 
 
+    /*
+    表示更新
+    */
+
     await loadSubmissions();
 
-  }
-  catch(error){
-
-    console.error(error);
 
     alert(
-      "Failed to reject submission: " +
+      "Submission rejected."
+    );
+
+  }
+
+  catch(error){
+
+    console.error(
+      "Reject error:",
+      error
+    );
+
+
+    alert(
+      "Failed to reject submission:\n" +
       error.message
     );
 
@@ -1116,26 +1463,42 @@ function formatDate(timestamp){
   }
 
 
-  return new Date(timestamp)
-    .toLocaleString(
-
-      "ja-JP",
-
-      {
-
-        year:"numeric",
-
-        month:"2-digit",
-
-        day:"2-digit",
-
-        hour:"2-digit",
-
-        minute:"2-digit"
-
-      }
-
+  const date =
+    new Date(
+      Number(timestamp)
     );
+
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return "-";
+
+  }
+
+
+  return date.toLocaleString(
+
+    "ja-JP",
+
+    {
+
+      year:"numeric",
+
+      month:"2-digit",
+
+      day:"2-digit",
+
+      hour:"2-digit",
+
+      minute:"2-digit"
+
+    }
+
+  );
 
 }
 
@@ -1180,40 +1543,127 @@ function escapeHTML(value){
 
 /*
 ========================================
-START
+AUTH STATE
 ========================================
+
+Firebaseのログイン状態が
+確定してからAdminを開始する。
 */
 
-auth.onAuthStateChanged(
+onAuthStateChanged(
+
+  auth,
+
   async user=>{
+
+    /*
+    ====================================
+    NOT LOGGED IN
+    ====================================
+    */
 
     if(!user){
 
-      location.href = "index.html";
+      adminStatus.innerHTML =
+        "<p class='error'>Not logged in. Redirecting...</p>";
+
+      /*
+      少し待ってからログインページへ
+      */
+
+      setTimeout(()=>{
+
+        location.href =
+          "index.html";
+
+      },500);
 
       return;
 
     }
 
+
+    /*
+    ====================================
+    ADMIN CHECK
+    ====================================
+    */
 
     if(
-      !ADMIN_EMAILS.includes(
-        user.email
-      )
+      !checkAdmin(user)
     ){
 
-      document.body.innerHTML =
-        "<h1>Access denied.</h1>" +
-        "<p>This account is not an administrator.</p>";
+      adminStatus.innerHTML =
+
+        "<p class='error'>" +
+        "Access denied." +
+        "</p>" +
+
+        "<p>" +
+        "This account is not an administrator." +
+        "</p>";
+
+      /*
+      Admin機能を無効化
+      */
+
+      createButton.disabled = true;
+
+      eventsDiv.innerHTML =
+        "<p class='error'>Administrator access required.</p>";
+
+      submissionsDiv.innerHTML =
+        "<p class='error'>Administrator access required.</p>";
 
       return;
 
     }
 
+
+    /*
+    ====================================
+    ADMIN LOGIN SUCCESS
+    ====================================
+    */
+
+    currentAdmin = user;
+
+
+    adminStatus.innerHTML = `
+
+      <div class="admin-email">
+
+        ✅ Logged in as administrator
+
+        <br><br>
+
+        <strong>
+          ${escapeHTML(
+            user.email
+          )}
+        </strong>
+
+      </div>
+
+    `;
+
+
+    /*
+    ====================================
+    LOAD DATA
+    ====================================
+    */
 
     await loadEvents();
 
     await loadSubmissions();
 
   }
+
 );
+
+</script>
+
+</body>
+
+</html>
