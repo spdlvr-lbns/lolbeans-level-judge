@@ -166,7 +166,7 @@ async function loadRanking(){
   ranking.innerHTML="";
 
   const snap=await getDocs(
-    collection(db,"community","september2026","times")
+  collection(db,"community",currentEvent,"times")
   );
 
   let players=[];
