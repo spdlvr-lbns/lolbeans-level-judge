@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>Choose Username</title>
+
+<style>
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#0f172a;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+
+.box{
+  width:350px;
+  max-width:90%;
+  background:#1e293b;
+  padding:30px;
+  border-radius:16px;
+  text-align:center;
+  box-sizing:border-box;
+}
+
+input{
+  width:100%;
+  box-sizing:border-box;
+  padding:12px;
+  margin-top:15px;
+  border-radius:8px;
+  border:1px solid #475569;
+  background:#0f172a;
+  color:white;
+  font-size:16px;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  margin-top:15px;
+  border:none;
+  border-radius:8px;
+  background:#7c3aed;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#8b5cf6;
+}
+
+#msg{
+  margin-top:15px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="box">
+
+  <h1>👤 Choose Your Username</h1>
+
+  <p>
+    This name will be shown on the LOLBeans rankings.
+  </p>
+
+  <input
+    id="username"
+    type="text"
+    maxlength="20"
+    placeholder="Enter username"
+  >
+
+  <button id="save">
+    Continue
+  </button>
+
+  <p id="msg"></p>
+
+</div>
+
+
+<script type="module">
+
+import {
+  auth,
+  db
+} from "./firebase.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import {
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+
+const usernameInput =
+  document.getElementById("username");
+
+const saveButton =
+  document.getElementById("save");
+
+const msg =
+  document.getElementById("msg");
+
+
+let currentUser = null;
+
+
+/*
+  Check login
+*/
+
+onAuthStateChanged(auth, (user) => {
+
+  if(!user){
+
+    location.href =
+      "index.html";
+
+    return;
+
+  }
+
+  currentUser = user;
+
+});
+
+
+/*
+  Save username
+*/
+
+saveButton.onclick = async () => {
+
+  if(!currentUser){
+
+    msg.textContent =
+      "❌ Please login first.";
+
+    return;
+
+  }
+
+
+  const username =
+    usernameInput.value.trim();
+
+
+  if(username.length < 3){
+
+    msg.textContent =
+      "❌ Username must be at least 3 characters.";
+
+    return;
+
+  }
+
+
+  if(username.length > 20){
+
+    msg.textContent =
+      "❌ Username must be 20 characters or less.";
+
+    return;
+
+  }
+
+
+  try{
+
+    await setDoc(
+      doc(
+        db,
+        "users",
+        currentUser.uid
+      ),
+      {
+        username: username
+      },
+      {
+        merge: true
+      }
+    );
+
+
+    msg.textContent =
+      "✅ Username saved!";
+
+
+    setTimeout(() => {
+
+      location.href =
+        "home.html";
+
+    }, 500);
+
+
+  }
+
+  catch(error){
+
+    console.error(error);
+
+    msg.textContent =
+      "❌ Failed to save username: " +
+      error.message;
+
+  }
+
+};
+
+</script>
+
+</body>
+
+</html>
