@@ -44,9 +44,15 @@ googleProvider.setCustomParameters({
 
 
 async function loginWithGoogle() {
+
+  // 以前の test123@lbns.gg などをログアウト
+  if (auth.currentUser) {
+    await signOut(auth);
+  }
+
+  // Googleアカウントでログイン
   return await signInWithPopup(auth, googleProvider);
 }
-
 
 async function logout() {
   return await signOut(auth);
