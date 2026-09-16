@@ -1,111 +1,141 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LOLBeans Level Judge</title>
-  <style>
-    body{
-      margin:0;
-      font-family:Arial,sans-serif;
-      background:#0f172a;
-      color:white;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-    }
-    .box{
-      width:340px;
-      background:#1e293b;
-      padding:25px;
-      border-radius:16px;
-    }
-    h1{text-align:center;margin-top:0;}
-    input{
-      width:100%;
-      padding:12px;
-      margin:8px 0;
-      border:none;
-      border-radius:8px;
-      box-sizing:border-box;
-    }
-    button{
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border:none;
-      border-radius:8px;
-      background:#7c3aed;
-      color:white;
-      cursor:pointer;
-      font-weight:bold;
-    }
-    #msg{
-      text-align:center;
-      margin-top:10px;
-      color:#fbbf24;
-    }
-  </style>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>LOLBeans Level Judge</title>
+
+<style>
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.box {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  width: 350px;
+  text-align: center;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+h1 {
+  margin-bottom: 25px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#googleLogin {
+  background: #4285F4;
+  color: white;
+}
+
+#rankingBtn {
+  background: #eee;
+}
+
+#msg {
+  margin-top: 15px;
+  color: #d00;
+}
+
+</style>
+
 </head>
+
+
 <body>
 
+
 <div class="box">
+
   <h1>🏁 LOLBeans</h1>
 
-  <input id="username" placeholder="Username">
-  <input id="password" type="password" placeholder="Password">
+  <p>
+    Googleアカウントでログインしてください
+  </p>
 
-  <button id="loginBtn">Login</button>
-  <button id="registerBtn">Create Account</button>
 
-<a href="ranking.html">
-  <button>🏆 Overall Ranking</button>
-</a>
-  
+  <button id="googleLogin">
+    🔵 Sign in with Google
+  </button>
+
+
+  <a href="ranking.html">
+    <button id="rankingBtn">
+      🏆 Overall Ranking
+    </button>
+  </a>
+
+
   <p id="msg"></p>
+
 </div>
 
+
 <script type="module">
-import { login, register } from "./firebase.js";
 
-const user = document.getElementById("username");
-const pass = document.getElementById("password");
-const msg = document.getElementById("msg");
+import {
+  loginWithGoogle
+} from "./firebase.js";
 
-document.getElementById("loginBtn").onclick = async () => {
-  try{
-    await login(user.value, pass.value);
-    location.href = "home.html";
-  }catch(e){
-    msg.textContent = e.message;
-  }
-};
 
-document.getElementById("registerBtn").onclick = async () => {
-  try{
-    await register(user.value, pass.value);
-    msg.textContent = "Account created!";
-  }catch(e){
-    msg.textContent = e.message;
-  }
-};
+const msg =
+  document.getElementById("msg");
+
+
+document
+  .getElementById("googleLogin")
+  .onclick = async () => {
+
+    msg.textContent = "Googleログイン中...";
+
+    try {
+
+      const result =
+        await loginWithGoogle();
+
+      console.log(
+        "Logged in:",
+        result.user.email
+      );
+
+      location.href = "home.html";
+
+    } catch (e) {
+
+      console.error(e);
+
+      msg.textContent =
+        "Login failed: " + e.message;
+
+    }
+
+  };
+
 </script>
 
-  <h2>My Stats</h2>
 
-<label>Speedrun</label>
-<input id="speed" type="number" value="490">
-
-<label>Battle Royale Wins</label>
-<input id="wins" type="number" value="0">
-
-<label>Tag Score</label>
-<input id="tag" type="number" value="0">
-
-<button id="save">Save Stats</button>
-
-<script type="module" src="script.js"></script>
-  
 </body>
+
 </html>
