@@ -130,13 +130,20 @@ async function loadEvent(){
   const snap = await getDocs(collection(db,"events"));
 
   snap.forEach(d=>{
+
     const e = d.data();
 
     if(e.active){
+
+      currentEvent = d.id;
+
       eventTitle.textContent = "🌍 " + e.name;
       eventMap.textContent = e.map;
+
     }
+
   });
+
 
 }
 const msg=document.getElementById("msg");
