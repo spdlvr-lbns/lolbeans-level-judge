@@ -38,14 +38,16 @@ const storage = getStorage(app);
 
 const googleProvider = new GoogleAuthProvider();
 
+googleProvider.setCustomParameters({
+  prompt: "select_account"
+});
 
-// Googleでログイン
+
 async function loginWithGoogle() {
   return await signInWithPopup(auth, googleProvider);
 }
 
 
-// ログアウト
 async function logout() {
   return await signOut(auth);
 }
