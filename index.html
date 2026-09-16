@@ -98,6 +98,29 @@ const msg =
   document.getElementById("msg");
 
 
+
+/*
+========================================
+ Analytics
+========================================
+
+このURLはアクセス記録専用API。
+
+usernameやregionを直接Supabaseへ
+書き込まず、Edge Function経由で送る。
+*/
+
+const ANALYTICS_URL =
+  "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/log-access";
+
+
+
+/*
+========================================
+ Google Login
+========================================
+*/
+
 document
   .getElementById("googleLogin")
   .onclick = async () => {
@@ -131,12 +154,62 @@ document
         await getDoc(userRef);
 
 
+      /*
+        Username exists
+      */
+
       if(
         userSnap.exists() &&
         userSnap.data().username
       ){
 
-        // Username already exists
+        const username =
+          userSnap.data().username;
+
+
+        /*
+          Send username to analytics.
+
+          重要：
+          Googleメールアドレスなどは
+          送信しない。
+        */
+
+        try {
+
+          await fetch(
+            ANALYTICS_URL,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                username: username
+              })
+            }
+          );
+
+        }
+
+        catch(analyticsError) {
+
+          /*
+            Analytics failure should NOT
+            prevent the user from logging in.
+          */
+
+          console.error(
+            "Analytics error:",
+            analyticsError
+          );
+
+        }
+
+
         location.href =
           "home.html";
 
@@ -144,7 +217,13 @@ document
 
       else {
 
-        // First login
+        /*
+          First login
+
+          Username has not been created yet,
+          so there is nothing to record.
+        */
+
         location.href =
           "username.html";
 
