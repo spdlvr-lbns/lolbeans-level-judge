@@ -55,6 +55,19 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
+  const ADMIN_PASSWORD = "lolbeans2026";
+
+window.login = () => {
+  const pass = document.getElementById("adminPass").value;
+
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("panel").classList.remove("hidden");
+    load();
+  } else {
+    document.getElementById("msg").innerText = "Wrong password";
+  }
+};
 const tbody = document.getElementById("list");
 
 async function load(){
