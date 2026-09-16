@@ -121,10 +121,11 @@ import {
   getDocs,
   getDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-const ranking=document.getElementById("ranking");
-  const eventTitle = document.getElementById("eventTitle");
+const ranking = document.getElementById("ranking");
+const eventTitle = document.getElementById("eventTitle");
 const eventMap = document.getElementById("eventMap");
 
+let currentEvent = "";
 async function loadEvent(){
 
   const snap = await getDocs(collection(db,"events"));
@@ -156,7 +157,7 @@ screenshot.onchange = () => {
     document.getElementById("fileName")
       .textContent =
       "📷 " + screenshot.files[0].name;
-    let currentEvent = "";
+
   }
 
 };
@@ -227,7 +228,7 @@ if(screenshot.files.length===0){
   const username=user.email.replace("@lbns.gg","");
 
   await setDoc(
-  doc(db,"community",currentEvent,"times",user.uid)
+  doc(db,"community",currentEvent,"times",user.uid),
   {
     username,
     time:t,
