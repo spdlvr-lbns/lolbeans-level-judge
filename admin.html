@@ -1,143 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOLBeans Admin</title>
-
-<style>
-body{
-  margin:0;
-  background:#0f172a;
-  color:white;
-  font-family:Arial,sans-serif;
-  padding:20px;
-}
-.card{
-  max-width:900px;
-  margin:0 auto 20px;
-  background:#1e293b;
-  border-radius:16px;
-  padding:20px;
-}
-input{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border:none;
-  border-radius:8px;
-  box-sizing:border-box;
-}
-button{
-  padding:10px 16px;
-  border:none;
-  border-radius:8px;
-  background:#7c3aed;
-  color:white;
-  cursor:pointer;
-}
-.remove{
-  background:#dc2626;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th,td{
-  padding:12px;
-  border-bottom:1px solid #334155;
-  text-align:left;
-}
-.hidden{display:none;}
-.success{color:#22c55e;}
-</style>
-</head>
-<body>
-
-<div id="panel" class="hidden">
-
-  <div class="card">
-    <h2>👑 Create Community Event</h2>
-
-    <input id="eventName" placeholder="Challenge-name">
-    <input id="eventMap" placeholder="name">
-
-    <label>Start</label>
-    <input id="startDate" type="date">
-
-    <label>End</label>
-    <input id="endDate" type="date">
-
-    <button id="createEvent">Create Event</button>
-
-    <p id="eventMsg"></p>
-  </div>
-
-  <div class="card">
-    <h2>🏁 Community Submissions</h2>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Player</th>
-          <th>Time</th>
-          <th>Delete</th>
-        </tr>
-      </thead>
-      <tbody id="list"></tbody>
-    </table>
-
-  </div>
-
-</div>
-
-<script type="module">
-import { db, auth } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-
 import {
   collection,
   getDocs,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const ADMIN_EMAIL = "test123@lbns.gg";
-const list = document.getElementById("list");
-
-// Admin check
-onAuthStateChanged(auth, (user)=>{
-
-  if(!user){
-    location.href="index.html";
-    return;
-  }
-
-  if(user.email!==ADMIN_EMAIL){
-    document.body.innerHTML="<h1>Access Denied</h1>";
-    return;
-  }
-
-  document.getElementById("panel").classList.remove("hidden");
-  load();
-
-});
-
 // Create Event
-document.getElementById("createEvent").addEventListener("click", async()=>{
+document.getElementById("createEvent").onclick = async () => {
 
-  const name=document.getElementById("eventName").value.trim();
-  const map=document.getElementById("eventMap").value.trim();
-  const start=document.getElementById("startDate").value;
-  const end=document.getElementById("endDate").value;
+  const name = document.getElementById("eventName").value.trim();
+  const map = document.getElementById("eventMap").value.trim();
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
 
-  if(!name || !map){
-    document.getElementById("eventMsg").textContent="Fill in Event Name and Map";
+  if(!name || !map || !start || !end){
+    document.getElementById("eventMsg").textContent =
+      "Fill in every field.";
     return;
   }
 
-  const id=name.toLowerCase().replace(/\s+/g,"-");
+  // 前のイベントを全部終了
+  const oldEvents = await getDocs(collection(db,"events"));
+
+  for(const e of oldEvents.docs){
+    await updateDoc(doc(db,"events",e.id),{
+      active:false
+    });
+  }
+
+  // 新しいイベント作成
+  const id = name.toLowerCase().replace(/\s+/g,"-");
 
   await setDoc(doc(db,"events",id),{
     name,
@@ -147,56 +41,6 @@ document.getElementById("createEvent").addEventListener("click", async()=>{
     active:true
   });
 
-  document.getElementById("eventMsg").innerHTML=
-    "<span class='success'>✅ Event Created!</span>";
-
-});
-
-// Load submissions
-async function load(){
-
-  list.innerHTML="";
-
-  const snap=await getDocs(
-    collection(db,"community","september2026","times")
-  );
-
-  snap.forEach(d=>{
-
-    const p=d.data();
-
-    list.innerHTML+=`
-      <tr>
-        <td>${p.username}</td>
-        <td>${Number(p.time).toFixed(3)}</td>
-        <td>
-          <button class="remove" data-id="${d.id}">
-            🗑 Delete
-          </button>
-        </td>
-      </tr>
-    `;
-
-  });
-
-  document.querySelectorAll(".remove").forEach(btn=>{
-
-    btn.onclick=async()=>{
-
-      if(!confirm("Delete this record?")) return;
-
-      await deleteDoc(
-        doc(db,"community","september2026","times",btn.dataset.id)
-      );
-
-      load();
-
-    };
-
-  });
-
-}
-</script>
-
-</body>
-</html>
+  document.getElementById("eventMsg").textContent =
+    "✅ Event Created!";
+};
