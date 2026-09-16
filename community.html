@@ -122,6 +122,23 @@ import {
   getDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 const ranking=document.getElementById("ranking");
+  const eventTitle = document.getElementById("eventTitle");
+const eventMap = document.getElementById("eventMap");
+
+async function loadEvent(){
+
+  const snap = await getDocs(collection(db,"events"));
+
+  snap.forEach(d=>{
+    const e = d.data();
+
+    if(e.active){
+      eventTitle.textContent = "🌍 " + e.name;
+      eventMap.textContent = e.map;
+    }
+  });
+
+}
 const msg=document.getElementById("msg");
 const screenshot =
   document.getElementById("screenshot");
