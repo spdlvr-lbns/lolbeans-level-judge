@@ -1,131 +1,92 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOLBeans Level Judge</title>
-<style>
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#0f172a;
-    color:white;
-}
-header{
-    background:#7c3aed;
-    padding:20px;
-    text-align:center;
-}
-.container{
-    max-width:900px;
-    margin:auto;
-    padding:20px;
-}
-.card{
-    background:#1e293b;
-    border-radius:15px;
-    padding:20px;
-    margin-bottom:20px;
-}
-button{
-    background:#7c3aed;
-    color:white;
-    border:none;
-    padding:10px 18px;
-    border-radius:8px;
-    cursor:pointer;
-}
-input{
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    border-radius:8px;
-    border:none;
-}
-.rank{
-    font-size:48px;
-    font-weight:bold;
-    color:#facc15;
-}
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-    gap:15px;
-}
-.small{
-    color:#cbd5e1;
-    font-size:14px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LOLBeans Level Judge</title>
+  <style>
+    body{
+      margin:0;
+      font-family:Arial,sans-serif;
+      background:#0f172a;
+      color:white;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+    .box{
+      width:340px;
+      background:#1e293b;
+      padding:25px;
+      border-radius:16px;
+    }
+    h1{text-align:center;margin-top:0;}
+    input{
+      width:100%;
+      padding:12px;
+      margin:8px 0;
+      border:none;
+      border-radius:8px;
+      box-sizing:border-box;
+    }
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border:none;
+      border-radius:8px;
+      background:#7c3aed;
+      color:white;
+      cursor:pointer;
+      font-weight:bold;
+    }
+    #msg{
+      text-align:center;
+      margin-top:10px;
+      color:#fbbf24;
+    }
+  </style>
 </head>
 <body>
 
-<header>
-<h1>🏁 LOLBeans Level Judge</h1>
-<p>Japanese / English Supported</p>
-</header>
+<div class="box">
+  <h1>🏁 LOLBeans</h1>
 
-<div class="container">
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
 
-<div class="card">
-<h2>🔐 Login</h2>
+  <button id="loginBtn">Login</button>
+  <button id="registerBtn">Create Account</button>
 
-<input placeholder="Username">
-
-<input type="password" placeholder="Password">
-
-<div style="display:flex;gap:10px;">
-<button>Login</button>
-<button>Create Account</button>
-</div>
+  <p id="msg"></p>
 </div>
 
-<div class="card">
-<h2>⭐ Overall Grade</h2>
-<div class="rank">S</div>
-<h3>425 / 550</h3>
-<div class="small">Speedrun 300 ・ Community 100 ・ Battle 100 ・ Tag 50</div>
-</div>
+<script type="module">
+import { login, register } from "./firebase.js";
 
-<div class="grid">
+const user = document.getElementById("username");
+const pass = document.getElementById("password");
+const msg = document.getElementById("msg");
 
-<div class="card">
-<h3>🏁 Speedrun</h3>
-<h2>512.882</h2>
-<p>Global Rank #18</p>
-</div>
+document.getElementById("loginBtn").onclick = async () => {
+  try{
+    await login(user.value, pass.value);
+    msg.textContent = "Login successful!";
+  }catch(e){
+    msg.textContent = e.message;
+  }
+};
 
-<div class="card">
-<h3>🏆 Battle Royale</h3>
-<h2>1,842 Wins</h2>
-<p>Global Rank #52</p>
-</div>
-
-<div class="card">
-<h3>⚡ Tag</h3>
-<h2>1830</h2>
-<p>Global Rank #11</p>
-</div>
-
-<div class="card">
-<h3>🌍 Community</h3>
-<h2>2 Events</h2>
-<p>Current Points 170</p>
-</div>
-
-</div>
-
-<div class="card">
-<h2>📊 Rankings</h2>
-<ol>
-<li>BeanFox</li>
-<li>JumpPro</li>
-<li>SkyBean</li>
-<li>You</li>
-</ol>
-</div>
-
-</div>
+document.getElementById("registerBtn").onclick = async () => {
+  try{
+    await register(user.value, pass.value);
+    msg.textContent = "Account created!";
+  }catch(e){
+    msg.textContent = e.message;
+  }
+};
+</script>
 
 </body>
 </html>
