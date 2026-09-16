@@ -143,8 +143,13 @@ nav{
 <script type="module">
 import { auth, db, logout } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
+import {
+  doc,
+  getDoc,
+  setDoc,
+  getDocs,
+  collection
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 const speed=document.getElementById("speed");
 const wins=document.getElementById("wins");
 const tag=document.getElementById("tag");
