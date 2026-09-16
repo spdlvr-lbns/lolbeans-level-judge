@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Challenge</title>
+<style>
+body{margin:0;font-family:Arial;background:#0f172a;color:white;}
+header{background:#7c3aed;padding:18px;display:flex;justify-content:space-between;align-items:center;}
+.container{max-width:900px;margin:auto;padding:20px;}
+.card{background:#1e293b;padding:18px;border-radius:14px;margin-bottom:18px;}
+input{width:100%;padding:10px;border:none;border-radius:8px;margin-top:8px;box-sizing:border-box;}
+button{width:100%;padding:12px;border:none;border-radius:8px;background:#7c3aed;color:white;font-weight:bold;margin-top:12px;cursor:pointer;}
+table{width:100%;border-collapse:collapse;}
+th,td{padding:10px;border-bottom:1px solid #334155;text-align:left;}
+.rank{text-align:center;width:60px;}
+.time{text-align:right;}
+img{width:100%;border-radius:10px;margin-top:10px;}
+.small{color:#cbd5e1;font-size:13px;}
+a{color:white;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<header>
+<div>
+<h2 style="margin:0;">🌍 Community</h2>
+<div id="user" class="small"></div>
+</div>
+<a href="home.html">🏠 Home</a>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h2>September 2026 Challenge</h2>
+<p class="small">Course: Speeder's Speedrun 2</p>
+
+<label>Your Time</label>
+<input id="time" placeholder="28.442">
+
+<label style="display:block;margin-top:12px;">Screenshot (Required)</label>
+<input id="image" type="file" accept="image/*">
+<img id="preview" style="display:none;">
+
+<button id="submit">Submit Time</button>
+<div id="msg" class="small"></div>
+</div>
+
+<div class="card">
+<h2>🏆 Live Ranking</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Player</th>
+<th>Time</th>
+<th>Pt</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
+</div>
+
+</div>
+
+<script type="module">
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { collection, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+const EVENT="september2026";
+let currentUser;
+
+const pts=[100,90,80,70,60,50,40,30,20,10];
+
+const preview=document.getElementById("preview");
+document.getElementById("image").onchange=e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+   preview.src=reader.result;
+   preview.style.display="block";
+ };
+ reader.readAsDataURL(file);
+};
+
+onAuthStateChanged(auth,async(user)=>{
+ if(!user){
+   location.href="index.html";
+   return;
+ }
+ currentUser=user;
+ document.getElementById("user").textContent=user.email.replace("@lbns.gg","");
+ loadRanking();
+});
+
+async function loadRanking(){
+ const snap=await getDocs(collection(db,"community",EVENT,"times"));
+ let list=[];
+ snap.forEach(d=>list.push(d.data()));
+ list.sort((a,b)=>a.time-b.time);
+ const body=document.getElementById("ranking");
+ body.innerHTML="";
+ list.forEach((p,i)=>{
+   const point=i<10?pts[i]:0;
+   body.innerHTML+=`<tr><td class="rank">${i+1}</td><td>${p.username}</td><td class="time">${p.time.toFixed(3)}</td><td>${point}</td></tr>`;
+ });
+}
+
+document.getElementById("submit").onclick=async()=>{
+ const t=parseFloat(document.getElementById("time").value);
+ const img=document.getElementById("image").files[0];
+ if(isNaN(t)){
+   msg.textContent="Enter a valid time.";
+   return;
+ }
+ if(!img){
+   msg.textContent="Screenshot is required.";
+   return;
+ }
+ await setDoc(doc(db,"community",EVENT,"times",currentUser.uid),{
+   username:currentUser.email.replace("@lbns.gg",""),
+   time:t,
+   submittedAt:Date.now()
+ });
+ msg.textContent="Submitted successfully!";
+ loadRanking();
+};
+</script>
+
+</body>
+</html>
