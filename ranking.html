@@ -1,72 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
 <title>Overall Ranking</title>
+
 <style>
-body{background:#0f172a;color:white;font-family:Arial;margin:0;padding:20px;}
-h1{text-align:center;}
-table{width:100%;border-collapse:collapse;margin-top:20px;}
-th,td{padding:12px;border-bottom:1px solid #334155;}
-th{color:#cbd5e1;}
-tr:hover{background:#1e293b;}
-.rank{width:60px;text-align:center;}
-.score{text-align:right;}
-a{color:#a78bfa;text-decoration:none;}
-  .tabs{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-bottom:20px;
-}
 
-.tabs button{
-  width:auto;
-  padding:10px 18px;
-  background:#334155;
+body{
+  background:#0f172a;
   color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
+  font-family:Arial;
+  margin:0;
+  padding:20px;
 }
 
-.tabs button:hover{
-  background:#7c3aed;
+h1{
+  text-align:center;
 }
-</style>
-</head>
-<body>
 
-<a href="index.html">← Home</a>
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
 
-<h1>🏆 Overall Ranking</h1>
+th,td{
+  padding:12px;
+  border-bottom:1px solid #334155;
+}
 
-  <div class="tabs">
-  <button id="overallBtn">Overall</button>
-  <button id="speedBtn">Speedrun</button>
-  <button id="battleBtn">Battle</button>
-  <button id="communityBtn">Community</button>
-  <button id="tagBtn">Tag</button>
-</div>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Player</th>
-<th>Grade</th>
-<th>Score</th>
-</tr>
-</thead>
-<tbody id="ranking"></tbody>
-</table>
+th{
+  color:#cbd5e1;
+}
 
-<script type="module">
-import { db } from "./firebase.js";
-import {
-collection,
-getDocs
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+tr:hover{
+  background:#1e293b;
+}
+
+.rank{
+  width:60px;
+  text-align:center;
+}
+
+.score{
+  text-align:right;
+}
+
+a{
+  color:#a78bfa;
+  text-decoration:none;
+}
+
 .tabs{
   display:flex;
   gap:10px;
@@ -87,70 +79,520 @@ getDocs
 .tabs button:hover{
   background:#7c3aed;
 }
-const tbody = document.getElementById("ranking");
 
-const snap = await getDocs(collection(db,"users"));
-
-let players=[];
-
-snap.forEach(doc=>{
-  const d=doc.data();
-
-  const speed=Math.max(0,Math.min(300,
-      Math.round((1200-d.speedrun)/710*300)));
-
-  const wins=Math.round((d.wins/10000)*100);
-
-  const tag=Math.round((d.tag/2000)*50);
-
-  const total=speed+wins+tag;
-
-  let grade="D";
-  if(total>=500)grade="SS";
-  else if(total>=400)grade="S";
-  else if(total>=300)grade="A";
-  else if(total>=200)grade="B";
-  else if(total>=100)grade="C";
-
-players.push({
-  name:p.username,
-  total,
-  grade,
-  speedrun:p.speedrun||1200,
-  wins:p.wins||0,
-  tag:p.tag||0,
-  community:p.community||0
-});
-
-if(currentMode==="overall"){
-  players.sort((a,b)=>b.total-a.total);
+.tabs button.active{
+  background:#7c3aed;
 }
 
-if(currentMode==="speed"){
-  players.sort((a,b)=>a.speedrun-b.speedrun);
+</style>
+
+</head>
+
+<body>
+
+<a href="home.html">← Home</a>
+
+<h1>🏆 Overall Ranking</h1>
+
+
+<div class="tabs">
+
+<button id="overallBtn">
+Overall
+</button>
+
+<button id="speedBtn">
+Speedrun
+</button>
+
+<button id="battleBtn">
+Battle
+</button>
+
+<button id="communityBtn">
+Community
+</button>
+
+<button id="tagBtn">
+Tag
+</button>
+
+</div>
+
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>#</th>
+
+<th>Player</th>
+
+<th>Grade</th>
+
+<th>Score</th>
+
+</tr>
+
+</thead>
+
+<tbody id="ranking"></tbody>
+
+</table>
+
+
+<script type="module">
+
+import { db } from "./firebase.js";
+
+import {
+  collection,
+  getDocs
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+
+const tbody =
+  document.getElementById("ranking");
+
+
+let currentMode = "overall";
+
+let players = [];
+
+
+/* =========================
+   LOAD PLAYERS
+========================= */
+
+async function loadPlayers(){
+
+  tbody.innerHTML =
+    "<tr><td colspan='4'>Loading...</td></tr>";
+
+
+  try{
+
+    const snap =
+      await getDocs(
+        collection(db,"users")
+      );
+
+
+    players = [];
+
+
+    snap.forEach((docSnap) => {
+
+      const p =
+        docSnap.data();
+
+
+      const speedrun =
+        Number(p.speedrun ?? 1200);
+
+      const wins =
+        Number(p.wins ?? 0);
+
+      const tag =
+        Number(p.tag ?? 0);
+
+      const community =
+        Number(p.community ?? 0);
+
+
+      const speedPoints =
+        Math.max(
+          0,
+          Math.min(
+            300,
+            Math.round(
+              (1200 - speedrun)
+              / 710
+              * 300
+            )
+          )
+        );
+
+
+      const winPoints =
+        Math.round(
+          (wins / 10000) * 100
+        );
+
+
+      const tagPoints =
+        Math.round(
+          (tag / 2000) * 50
+        );
+
+
+      const total =
+        speedPoints +
+        winPoints +
+        tagPoints +
+        community;
+
+
+      let grade = "D";
+
+
+      if(total >= 500)
+        grade = "SS";
+
+      else if(total >= 400)
+        grade = "S";
+
+      else if(total >= 300)
+        grade = "A";
+
+      else if(total >= 200)
+        grade = "B";
+
+      else if(total >= 100)
+        grade = "C";
+
+
+      players.push({
+
+        name:
+          p.username || "Player",
+
+        total:
+          total,
+
+        grade:
+          grade,
+
+        speedrun:
+          speedrun,
+
+        wins:
+          wins,
+
+        tag:
+          tag,
+
+        community:
+          community
+
+      });
+
+    });
+
+
+    renderRanking();
+
+
+  }catch(error){
+
+    console.error(error);
+
+    tbody.innerHTML =
+      `<tr>
+        <td colspan="4">
+          ❌ Failed to load ranking
+        </td>
+      </tr>`;
+
+  }
+
 }
 
-if(currentMode==="battle"){
-  players.sort((a,b)=>b.wins-a.wins);
+
+/* =========================
+   RENDER
+========================= */
+
+function renderRanking(){
+
+  let sorted =
+    [...players];
+
+
+  if(currentMode === "overall"){
+
+    sorted.sort(
+      (a,b) =>
+        b.total - a.total
+    );
+
+  }
+
+
+  else if(currentMode === "speed"){
+
+    sorted.sort(
+      (a,b) =>
+        a.speedrun - b.speedrun
+    );
+
+  }
+
+
+  else if(currentMode === "battle"){
+
+    sorted.sort(
+      (a,b) =>
+        b.wins - a.wins
+    );
+
+  }
+
+
+  else if(currentMode === "community"){
+
+    sorted.sort(
+      (a,b) =>
+        b.community - a.community
+    );
+
+  }
+
+
+  else if(currentMode === "tag"){
+
+    sorted.sort(
+      (a,b) =>
+        b.tag - a.tag
+    );
+
+  }
+
+
+  tbody.innerHTML = "";
+
+
+  if(sorted.length === 0){
+
+    tbody.innerHTML =
+      `<tr>
+        <td colspan="4">
+          No players yet.
+        </td>
+      </tr>`;
+
+    return;
+  }
+
+
+  sorted.forEach((p,i) => {
+
+    const row =
+      document.createElement("tr");
+
+
+    row.innerHTML = `
+
+      <td class="rank">
+        ${i + 1}
+      </td>
+
+      <td>
+        ${escapeHTML(p.name)}
+      </td>
+
+      <td>
+        ${p.grade}
+      </td>
+
+      <td class="score">
+        ${getDisplayScore(p)}
+      </td>
+
+    `;
+
+
+    tbody.appendChild(row);
+
+  });
+
+
+  updateActiveButton();
+
 }
 
-if(currentMode==="community"){
-  players.sort((a,b)=>b.community-a.community);
+
+/* =========================
+   SCORE DISPLAY
+========================= */
+
+function getDisplayScore(player){
+
+  if(currentMode === "speed"){
+
+    return player.speedrun;
+
+  }
+
+
+  if(currentMode === "battle"){
+
+    return player.wins;
+
+  }
+
+
+  if(currentMode === "community"){
+
+    return player.community;
+
+  }
+
+
+  if(currentMode === "tag"){
+
+    return player.tag;
+
+  }
+
+
+  return player.total;
+
 }
 
-if(currentMode==="tag"){
-  players.sort((a,b)=>b.tag-a.tag);
+
+/* =========================
+   BUTTONS
+========================= */
+
+document.getElementById(
+  "overallBtn"
+).onclick = () => {
+
+  currentMode = "overall";
+
+  renderRanking();
+
+};
+
+
+document.getElementById(
+  "speedBtn"
+).onclick = () => {
+
+  currentMode = "speed";
+
+  renderRanking();
+
+};
+
+
+document.getElementById(
+  "battleBtn"
+).onclick = () => {
+
+  currentMode = "battle";
+
+  renderRanking();
+
+};
+
+
+document.getElementById(
+  "communityBtn"
+).onclick = () => {
+
+  currentMode = "community";
+
+  renderRanking();
+
+};
+
+
+document.getElementById(
+  "tagBtn"
+).onclick = () => {
+
+  currentMode = "tag";
+
+  renderRanking();
+
+};
+
+
+/* =========================
+   ACTIVE BUTTON
+========================= */
+
+function updateActiveButton(){
+
+  const buttons = {
+
+    overall:
+      document.getElementById(
+        "overallBtn"
+      ),
+
+    speed:
+      document.getElementById(
+        "speedBtn"
+      ),
+
+    battle:
+      document.getElementById(
+        "battleBtn"
+      ),
+
+    community:
+      document.getElementById(
+        "communityBtn"
+      ),
+
+    tag:
+      document.getElementById(
+        "tagBtn"
+      )
+
+  };
+
+
+  Object.values(buttons).forEach(
+    button =>
+      button.classList.remove(
+        "active"
+      )
+  );
+
+
+  buttons[currentMode]
+    .classList.add("active");
+
 }
-players.forEach((p,i)=>{
-  tbody.innerHTML+=`
-  <tr>
-    <td class="rank">${i+1}</td>
-    <td>${p.name}</td>
-    <td>${p.grade}</td>
-    <td class="score">${p.total}</td>
-  </tr>`;
-});
+
+
+/* =========================
+   SECURITY
+   Prevent username HTML
+========================= */
+
+function escapeHTML(value){
+
+  return String(value)
+
+    .replaceAll("&","&amp;")
+
+    .replaceAll("<","&lt;")
+
+    .replaceAll(">","&gt;")
+
+    .replaceAll('"',"&quot;")
+
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* =========================
+   START
+========================= */
+
+loadPlayers();
+
 </script>
 
 </body>
+
 </html>
