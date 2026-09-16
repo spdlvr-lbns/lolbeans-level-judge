@@ -227,7 +227,7 @@ if(screenshot.files.length===0){
   const username=user.email.replace("@lbns.gg","");
 
   await setDoc(
-  doc(db,"community","september2026","times",user.uid),
+  doc(db,"community",currentEvent,"times",user.uid)
   {
     username,
     time:t,
