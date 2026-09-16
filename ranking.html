@@ -67,7 +67,26 @@ import {
 collection,
 getDocs
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+.tabs{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
 
+.tabs button{
+  width:auto;
+  padding:10px 18px;
+  background:#334155;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.tabs button:hover{
+  background:#7c3aed;
+}
 const tbody = document.getElementById("ranking");
 
 const snap = await getDocs(collection(db,"users"));
