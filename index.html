@@ -76,7 +76,7 @@ const msg = document.getElementById("msg");
 document.getElementById("loginBtn").onclick = async () => {
   try{
     await login(user.value, pass.value);
-    msg.textContent = "Login successful!";
+    location.href = "home.html";
   }catch(e){
     msg.textContent = e.message;
   }
