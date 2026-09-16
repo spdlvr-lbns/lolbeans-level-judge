@@ -55,7 +55,8 @@ import {
   updateDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-  const ADMIN_PASSWORD = "lolbeans2026";
+const ADMIN_PASSWORD = "lolbeans2026";
+const tbody = document.getElementById("list");
 
 window.login = () => {
   const pass = document.getElementById("adminPass").value;
@@ -68,49 +69,36 @@ window.login = () => {
     document.getElementById("msg").innerText = "Wrong password";
   }
 };
-const tbody = document.getElementById("list");
 
-async function load(){
-
+async function load() {
   tbody.innerHTML = "";
 
   const snap = await getDocs(
-    collection(db,"community","september2026","times")
+    collection(db, "community", "september2026", "times")
   );
 
-  snap.forEach(d=>{
-
+  snap.forEach(d => {
     const p = d.data();
 
-tbody.innerHTML += `
-<tr>
-  <td>${p.username}</td>
-  <td>${p.time.toFixed(3)}</td>
-  <td>${p.invalid ? "Removed" : "Live"}</td>
-  <td>
-    <button onclick="removeRun('${d.id}')">
-      🗑 Remove
-    </button>
-  </td>
-</tr>
-`;
-
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.username}</td>
+        <td>${p.time.toFixed(3)}</td>
+        <td>${p.invalid ? "Removed" : "Live"}</td>
+        <td>
+          <button onclick="removeRun('${d.id}')">🗑 Remove</button>
+        </td>
+      </tr>
+    `;
   });
-
 }
 
-window.approve = async(id)=>{
-
-window.removeRun = async(id)=>{
+window.removeRun = async (id) => {
   await updateDoc(
-    doc(db,"community","september2026","times",id),
-    { invalid:true }
+    doc(db, "community", "september2026", "times", id),
+    { invalid: true }
   );
+
   load();
 };
-
 </script>
-</script>
-
-</body>
-</html>
