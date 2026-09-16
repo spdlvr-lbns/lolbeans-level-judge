@@ -88,13 +88,12 @@ tbody.innerHTML += `
 
 window.approve = async(id)=>{
 
+window.removeRun = async(id)=>{
   await updateDoc(
     doc(db,"community","september2026","times",id),
-    { approved:true }
+    { invalid:true }
   );
-
   load();
-
 };
 
 load();
