@@ -69,14 +69,18 @@ async function load(){
 
     const p = d.data();
 
-    tbody.innerHTML += `
+tbody.innerHTML += `
 <tr>
-<th>Player</th>
-<th>Time</th>
-<th>Status</th>
-<th>Remove</th>
+  <td>${p.username}</td>
+  <td>${p.time.toFixed(3)}</td>
+  <td>${p.invalid ? "Removed" : "Live"}</td>
+  <td>
+    <button onclick="removeRun('${d.id}')">
+      🗑 Remove
+    </button>
+  </td>
 </tr>
-    `;
+`;
 
   });
 
