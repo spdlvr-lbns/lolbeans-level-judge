@@ -112,11 +112,14 @@ snap.forEach(doc=>{
   else if(total>=200)grade="B";
   else if(total>=100)grade="C";
 
-  players.push({
-    name:d.username,
-    grade,
-    total
-  });
+players.push({
+  name:p.username,
+  total,
+  grade,
+  speedrun:p.speedrun||1200,
+  wins:p.wins||0,
+  tag:p.tag||0,
+  community:p.community||0
 });
 
 if(currentMode==="overall"){
