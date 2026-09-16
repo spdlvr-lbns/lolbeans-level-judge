@@ -64,48 +64,41 @@ a{
 <a href="home.html">← Home</a>
 
 <div class="card">
+
 <h1 id="eventTitle">🌍 Community Challenge</h1>
 <p id="eventMap">Loading event...</p>
-  <input id="time" type="number" step="0.001" placeholder="28.442">
+
+<input id="time" type="number" step="0.001" placeholder="28.442">
+
 <label>Screenshot (Required)</label>
-
-<input
-  id="screenshot"
-  type="file"
-  accept="image/*"
->
-
-<p id="fileName"></p><label>Screenshot (Required)</label>
-
-<input
-  id="screenshot"
-  type="file"
-  accept="image/*"
->
-
+<input id="screenshot" type="file" accept="image/*">
 <p id="fileName"></p>
-  
-  <button id="submitBtn">Submit Time</button>
 
-  <p id="msg"></p>
+<button id="submitBtn">Submit Time</button>
+
+<p id="msg"></p>
+
 </div>
 
 <div class="card">
-  <h2>🏆 Live Ranking</h2>
 
-  <table>
+<h2>🏆 Live Ranking</h2>
+
+<table>
+
 <thead>
-  <tr>
-    <th>#</th>
-    <th>Player</th>
-    <th>Time</th>
-    <th>Pt</th>
-  </tr>
+<tr>
+<th>#</th>
+<th>Player</th>
+<th>Time</th>
+<th>Pt</th>
+</tr>
 </thead>
 
-    <tbody id="ranking"></tbody>
+<tbody id="ranking"></tbody>
 
-  </table>
+</table>
+
 </div>
 
 </div>
@@ -118,85 +111,79 @@ import {
   collection,
   doc,
   setDoc,
-  getDocs,
-  getDoc
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-const ranking = document.getElementById("ranking");
-const eventTitle = document.getElementById("eventTitle");
-const eventMap = document.getElementById("eventMap");
 
-let currentEvent = "";
+const ranking=document.getElementById("ranking");
+const eventTitle=document.getElementById("eventTitle");
+const eventMap=document.getElementById("eventMap");
+const msg=document.getElementById("msg");
+const screenshot=document.getElementById("screenshot");
+
+let currentEvent="";
+
 async function loadEvent(){
 
-  const snap = await getDocs(collection(db,"events"));
+  const snap=await getDocs(collection(db,"events"));
 
   snap.forEach(d=>{
 
-    const e = d.data();
+    const e=d.data();
 
     if(e.active){
 
-      currentEvent = d.id;
+      currentEvent=d.id;
 
-      eventTitle.textContent = "🌍 " + e.name;
-      eventMap.textContent = e.map;
+      eventTitle.textContent="🌍 "+e.name;
+      eventMap.textContent=e.map;
 
     }
 
   });
 
-
 }
-const msg=document.getElementById("msg");
-const screenshot =
-  document.getElementById("screenshot");
 
-screenshot.onchange = () => {
+screenshot.onchange=()=>{
 
   if(screenshot.files.length){
-    document.getElementById("fileName")
-      .textContent =
-      "📷 " + screenshot.files[0].name;
+
+    document.getElementById("fileName").textContent=
+      "📷 "+screenshot.files[0].name;
 
   }
 
 };
-  
+
 async function loadRanking(){
+
+  if(currentEvent==="") return;
 
   ranking.innerHTML="";
 
   const snap=await getDocs(
-  collection(db,"community",currentEvent,"times")
+    collection(db,"community",currentEvent,"times")
   );
 
   let players=[];
 
-  snap.forEach(d=>{
-    players.push(d.data());
-  });
+  snap.forEach(d=>players.push(d.data()));
 
   players.sort((a,b)=>a.time-b.time);
+
   players.forEach((p,i)=>{
-  p.rank = i + 1;
-  p.points = Math.max(0, 110 - (p.rank * 10));
-});
 
-players.forEach((p,i)=>{
+    const points=Math.max(0,110-(i+1)*10);
 
-  p.rank = i + 1;
-  p.points = Math.max(0,110-p.rank*10);
+    ranking.innerHTML+=`
+      <tr>
+        <td>${i+1}</td>
+        <td>${p.username}</td>
+        <td>${Number(p.time).toFixed(3)}</td>
+        <td>${points}</td>
+      </tr>
+    `;
 
-  ranking.innerHTML += `
-    <tr>
-      <td>${p.rank}</td>
-      <td>${p.username}</td>
-      <td>${p.time.toFixed(3)}</td>
-      <td>${p.points}</td>
-    </tr>
-  `;
-
-});
+  });
 
 }
 
@@ -209,43 +196,53 @@ document.getElementById("submitBtn").onclick=async()=>{
     return;
   }
 
+  if(currentEvent===""){
+    msg.textContent="No active event.";
+    return;
+  }
+
   const t=Number(document.getElementById("time").value);
 
-if(screenshot.files.length===0){
-
-  msg.textContent =
-    "Screenshot is required.";
-
-  return;
-
-}
-  
   if(!t){
     msg.textContent="Enter a valid time.";
     return;
   }
 
+  if(screenshot.files.length===0){
+    msg.textContent="Screenshot is required.";
+    return;
+  }
+
   const username=user.email.replace("@lbns.gg","");
 
+  // Communityタイム保存
   await setDoc(
-  doc(db,"community",currentEvent,"times",user.uid),
-  {
-    username,
-    time:t,
-    points:0,
-    rank:0,
-    approved:false,
-    submittedAt: Date.now()
-  }
-);
+    doc(db,"community",currentEvent,"times",user.uid),
+    {
+      username,
+      time:t,
+      submittedAt:Date.now()
+    }
+  );
 
-  msg.textContent="Time submitted!";
+  // usersにも保存（Home・Ranking用）
+  await setDoc(
+    doc(db,"users",user.uid),
+    {
+      username,
+      community:0
+    },
+    {merge:true}
+  );
+
+  msg.textContent="✅ Time submitted!";
+
   loadRanking();
 
 };
 
 await loadEvent();
-loadRanking();
+await loadRanking();
 
 </script>
 
