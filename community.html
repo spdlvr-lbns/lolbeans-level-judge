@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Community Challenge</title>
 
 <style>
+
 body{
   margin:0;
   font-family:Arial,sans-serif;
@@ -46,6 +48,10 @@ button{
   cursor:pointer;
 }
 
+button:hover{
+  background:#6d28d9;
+}
+
 button:disabled{
   background:#475569;
   cursor:not-allowed;
@@ -73,7 +79,6 @@ a{
   border-radius:8px;
   font-size:13px;
   font-weight:bold;
-  margin-top:5px;
 }
 
 .active{
@@ -91,19 +96,55 @@ a{
   color:#fde68a;
 }
 
+.pending{
+  color:#fbbf24;
+}
+
+.approved{
+  color:#86efac;
+}
+
+.rejected{
+  color:#fca5a5;
+}
+
 .countdown{
   margin-top:10px;
   font-weight:bold;
   color:#c4b5fd;
 }
 
-.error{
-  color:#fca5a5;
+.message{
+  margin-top:10px;
+  font-weight:bold;
 }
 
 .success{
   color:#86efac;
 }
+
+.error{
+  color:#fca5a5;
+}
+
+.info{
+  color:#c4b5fd;
+}
+
+.preview{
+  max-width:100%;
+  max-height:300px;
+  margin-top:10px;
+  border-radius:10px;
+  display:none;
+}
+
+.points{
+  font-size:28px;
+  font-weight:bold;
+  color:#c4b5fd;
+}
+
 </style>
 </head>
 
@@ -125,7 +166,12 @@ a{
 
 <p id="countdown" class="countdown"></p>
 
-<div id="submissionArea">
+</div>
+
+
+<div class="card" id="submissionCard">
+
+<h2>Submit Your Time</h2>
 
 <input
   id="time"
@@ -134,7 +180,9 @@ a{
   placeholder="28.442"
 >
 
-<label>Screenshot (Required)</label>
+<label>
+Screenshot (Required)
+</label>
 
 <input
   id="screenshot"
@@ -144,13 +192,16 @@ a{
 
 <p id="fileName"></p>
 
+<img
+  id="preview"
+  class="preview"
+>
+
 <button id="submitBtn">
 Submit Time
 </button>
 
-<p id="msg"></p>
-
-</div>
+<p id="msg" class="message"></p>
 
 </div>
 
@@ -172,9 +223,28 @@ Submit Time
 
 </thead>
 
-<tbody id="ranking"></tbody>
+<tbody id="ranking">
+
+<tr>
+<td colspan="4">
+Loading...
+</td>
+</tr>
+
+</tbody>
 
 </table>
+
+</div>
+
+
+<div class="card">
+
+<h2>⭐ My Community Points</h2>
+
+<p class="points" id="myPoints">
+0 pt
+</p>
 
 </div>
 
@@ -183,35 +253,61 @@ Submit Time
 
 <script type="module">
 
-import { auth, db } from "./firebase.js";
+import { auth, db, storage } from "./firebase.js";
 
 import {
   collection,
   doc,
   setDoc,
-  getDocs
+  getDocs,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
-const ranking = document.getElementById("ranking");
 
-const eventTitle = document.getElementById("eventTitle");
+const eventTitle =
+  document.getElementById("eventTitle");
 
-const eventMap = document.getElementById("eventMap");
+const eventMap =
+  document.getElementById("eventMap");
 
-const eventStatus = document.getElementById("eventStatus");
+const eventStatus =
+  document.getElementById("eventStatus");
 
-const eventDates = document.getElementById("eventDates");
+const eventDates =
+  document.getElementById("eventDates");
 
-const countdown = document.getElementById("countdown");
+const countdown =
+  document.getElementById("countdown");
 
-const msg = document.getElementById("msg");
+const submissionCard =
+  document.getElementById("submissionCard");
 
-const screenshot = document.getElementById("screenshot");
+const submitBtn =
+  document.getElementById("submitBtn");
 
-const submitBtn = document.getElementById("submitBtn");
+const screenshot =
+  document.getElementById("screenshot");
 
-const submissionArea = document.getElementById("submissionArea");
+const fileName =
+  document.getElementById("fileName");
+
+const preview =
+  document.getElementById("preview");
+
+const msg =
+  document.getElementById("msg");
+
+const ranking =
+  document.getElementById("ranking");
+
+const myPoints =
+  document.getElementById("myPoints");
 
 
 let currentEvent = "";
@@ -221,291 +317,222 @@ let currentEventData = null;
 let countdownTimer = null;
 
 
-/*
-==================================================
-EVENT LOAD
-==================================================
-*/
+/* =========================
+   DATE
+========================= */
+
+function getTimestamp(value){
+
+  if(!value) return 0;
+
+  if(typeof value.toMillis === "function"){
+    return value.toMillis();
+  }
+
+  return new Date(value).getTime();
+
+}
+
+
+function formatDate(timestamp){
+
+  return new Date(timestamp).toLocaleString(
+    "ja-JP",
+    {
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit",
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+/* =========================
+   EVENT
+========================= */
 
 async function loadEvent(){
 
-  try{
-
-    const snap = await getDocs(
+  const snap =
+    await getDocs(
       collection(db,"events")
     );
 
-    const now = Date.now();
+  const now = Date.now();
 
-    let activeEvent = null;
-    let activeEventId = "";
+  let activeEvent = null;
 
-    let nextEvent = null;
-    let nextEventId = "";
+  let activeId = "";
 
-    snap.forEach(d=>{
+  let nextEvent = null;
 
-      const e = d.data();
+  let nextId = "";
 
-      /*
-      Firestore Timestampの場合
-      */
+  snap.forEach(d=>{
 
-      let startTime = 0;
-      let endTime = 0;
+    const e = d.data();
 
-      if(e.startAt){
+    const start =
+      getTimestamp(e.startAt);
 
-        if(typeof e.startAt.toMillis === "function"){
-          startTime = e.startAt.toMillis();
-        }else{
-          startTime = new Date(e.startAt).getTime();
-        }
+    const end =
+      getTimestamp(e.endAt);
 
-      }
+    if(
+      start &&
+      end &&
+      now >= start &&
+      now < end
+    ){
 
-      if(e.endAt){
+      if(
+        !activeEvent ||
+        start > activeEvent._start
+      ){
 
-        if(typeof e.endAt.toMillis === "function"){
-          endTime = e.endAt.toMillis();
-        }else{
-          endTime = new Date(e.endAt).getTime();
-        }
+        activeEvent = e;
 
-      }
+        activeEvent._start = start;
 
-      /*
-      startAt / endAt がない古いイベントへの対応
-      */
+        activeEvent._end = end;
 
-      if(!startTime){
-        startTime = 0;
-      }
-
-      if(!endTime){
-        /*
-        古い active イベントの場合は
-        active フラグを使用
-        */
-
-        if(e.active === true){
-
-          if(!activeEvent){
-
-            activeEvent = e;
-            activeEventId = d.id;
-
-          }
-
-        }
-
-        return;
+        activeId = d.id;
 
       }
-
-      /*
-      現在開催中
-      */
-
-      if(now >= startTime && now < endTime){
-
-        if(
-          !activeEvent ||
-          startTime >
-          (
-            activeEvent._startTime || 0
-          )
-        ){
-
-          activeEvent = {
-            ...e,
-            _startTime:startTime,
-            _endTime:endTime
-          };
-
-          activeEventId = d.id;
-
-        }
-
-      }
-
-      /*
-      まだ始まっていないイベント
-      */
-
-      if(now < startTime){
-
-        if(
-          !nextEvent ||
-          startTime <
-          (
-            nextEvent._startTime || Infinity
-          )
-        ){
-
-          nextEvent = {
-            ...e,
-            _startTime:startTime,
-            _endTime:endTime
-          };
-
-          nextEventId = d.id;
-
-        }
-
-      }
-
-    });
-
-
-    /*
-    現在開催中のイベント
-    */
-
-    if(activeEvent){
-
-      currentEvent = activeEventId;
-
-      currentEventData = activeEvent;
-
-      showActiveEvent();
-
-      return;
 
     }
 
+    if(
+      start &&
+      now < start
+    ){
 
-    /*
-    開催中イベントがない場合
-    */
+      if(
+        !nextEvent ||
+        start < nextEvent._start
+      ){
+
+        nextEvent = e;
+
+        nextEvent._start = start;
+
+        nextEvent._end = end;
+
+        nextId = d.id;
+
+      }
+
+    }
+
+  });
+
+
+  if(activeEvent){
+
+    currentEvent = activeId;
+
+    currentEventData = activeEvent;
+
+    showActiveEvent();
+
+  }
+
+  else if(nextEvent){
+
+    currentEvent = "";
+
+    currentEventData = nextEvent;
+
+    showWaitingEvent();
+
+  }
+
+  else{
 
     currentEvent = "";
 
     currentEventData = null;
 
-    if(nextEvent){
-
-      showWaitingEvent(
-        nextEvent,
-        nextEventId
-      );
-
-    }else{
-
-      showNoEvent();
-
-    }
-
-  }catch(error){
-
-    console.error(error);
-
-    eventTitle.textContent =
-      "🌍 Community Challenge";
-
-    eventMap.textContent =
-      "Failed to load event.";
-
-    eventStatus.innerHTML =
-      '<span class="status ended">ERROR</span>';
+    showNoEvent();
 
   }
 
 }
 
 
-/*
-==================================================
-ACTIVE EVENT
-==================================================
-*/
+/* =========================
+   ACTIVE
+========================= */
 
 function showActiveEvent(){
 
   const e = currentEventData;
 
   eventTitle.textContent =
-    "🌍 " + (e.name || "Community Challenge");
+    "🌍 " + e.name;
 
   eventMap.textContent =
-    e.map || "Unknown Map";
+    "🗺️ Map: " + e.map;
 
   eventStatus.innerHTML =
     '<span class="status active">🟢 EVENT ACTIVE</span>';
 
-  /*
-  日時表示
-  */
+  eventDates.textContent =
+    "📅 " +
+    formatDate(e._start) +
+    " ～ " +
+    formatDate(e._end);
 
-  if(e._startTime && e._endTime){
-
-    eventDates.textContent =
-      "📅 " +
-      formatDate(e._startTime) +
-      " ～ " +
-      formatDate(e._endTime);
-
-  }else{
-
-    eventDates.textContent = "";
-
-  }
-
-  /*
-  投稿エリアを表示
-  */
-
-  submissionArea.style.display = "block";
+  submissionCard.style.display =
+    "block";
 
   submitBtn.disabled = false;
 
-  startCountdown(e._endTime);
+  startCountdown(e._end,false);
 
 }
 
 
-/*
-==================================================
-WAITING EVENT
-==================================================
-*/
+/* =========================
+   WAITING
+========================= */
 
-function showWaitingEvent(e,id){
+function showWaitingEvent(){
 
-  currentEvent = "";
-
-  currentEventData = e;
+  const e = currentEventData;
 
   eventTitle.textContent =
-    "🌍 " + (e.name || "Community Challenge");
+    "🌍 " + e.name;
 
   eventMap.textContent =
-    e.map || "Unknown Map";
+    "🗺️ Map: " + e.map;
 
   eventStatus.innerHTML =
-    '<span class="status waiting">🟡 EVENT NOT STARTED</span>';
+    '<span class="status waiting">🟡 NOT STARTED</span>';
 
   eventDates.textContent =
-    "📅 Starts: " +
-    formatDate(e._startTime) +
+    "📅 " +
+    formatDate(e._start) +
     " ～ " +
-    formatDate(e._endTime);
+    formatDate(e._end);
 
-  submissionArea.style.display = "none";
-
-  startCountdown(e._startTime,true);
+  submissionCard.style.display =
+    "none";
 
   ranking.innerHTML =
     '<tr><td colspan="4">Event has not started yet.</td></tr>';
 
+  startCountdown(e._start,true);
+
 }
 
 
-/*
-==================================================
-NO EVENT
-==================================================
-*/
+/* =========================
+   NO EVENT
+========================= */
 
 function showNoEvent(){
 
@@ -522,7 +549,8 @@ function showNoEvent(){
 
   countdown.textContent = "";
 
-  submissionArea.style.display = "none";
+  submissionCard.style.display =
+    "none";
 
   ranking.innerHTML =
     '<tr><td colspan="4">No active event.</td></tr>';
@@ -530,13 +558,11 @@ function showNoEvent(){
 }
 
 
-/*
-==================================================
-COUNTDOWN
-==================================================
-*/
+/* =========================
+   COUNTDOWN
+========================= */
 
-function startCountdown(targetTime,starting=false){
+function startCountdown(target,starting){
 
   if(countdownTimer){
 
@@ -544,33 +570,19 @@ function startCountdown(targetTime,starting=false){
 
   }
 
-  if(!targetTime){
-
-    countdown.textContent = "";
-
-    return;
-
-  }
-
   function update(){
 
-    const now = Date.now();
-
     const difference =
-      targetTime - now;
+      target - Date.now();
 
     if(difference <= 0){
+
+      clearInterval(countdownTimer);
 
       countdown.textContent =
         starting
         ? "Starting..."
         : "⏰ Event ended.";
-
-      clearInterval(countdownTimer);
-
-      /*
-      時間になったら自動的にイベントを再確認
-      */
 
       setTimeout(async()=>{
 
@@ -584,36 +596,31 @@ function startCountdown(targetTime,starting=false){
 
     }
 
-    const totalSeconds =
+    const seconds =
       Math.floor(difference / 1000);
 
     const days =
-      Math.floor(totalSeconds / 86400);
+      Math.floor(seconds / 86400);
 
     const hours =
       Math.floor(
-        (totalSeconds % 86400) / 3600
+        (seconds % 86400) / 3600
       );
 
     const minutes =
       Math.floor(
-        (totalSeconds % 3600) / 60
+        (seconds % 3600) / 60
       );
 
-    const seconds =
-      totalSeconds % 60;
+    const secs =
+      seconds % 60;
 
-    if(starting){
+    countdown.textContent =
+      starting
 
-      countdown.textContent =
-        `⏳ Starts in ${days}d ${hours}h ${minutes}m ${seconds}s`;
+      ? `⏳ Starts in ${days}d ${hours}h ${minutes}m ${secs}s`
 
-    }else{
-
-      countdown.textContent =
-        `⏱️ Ends in ${days}d ${hours}h ${minutes}m ${seconds}s`;
-
-    }
+      : `⏱️ Ends in ${days}d ${hours}h ${minutes}m ${secs}s`;
 
   }
 
@@ -625,175 +632,205 @@ function startCountdown(targetTime,starting=false){
 }
 
 
-/*
-==================================================
-DATE FORMAT
-==================================================
-*/
-
-function formatDate(timestamp){
-
-  return new Date(timestamp)
-    .toLocaleString(
-      "ja-JP",
-      {
-        year:"numeric",
-        month:"2-digit",
-        day:"2-digit",
-        hour:"2-digit",
-        minute:"2-digit"
-      }
-    );
-
-}
-
-
-/*
-==================================================
-SCREENSHOT
-==================================================
-*/
+/* =========================
+   SCREENSHOT PREVIEW
+========================= */
 
 screenshot.onchange = ()=>{
 
-  if(screenshot.files.length){
-
-    document.getElementById("fileName")
-      .textContent =
-      "📷 " +
-      screenshot.files[0].name;
-
-  }else{
-
-    document.getElementById("fileName")
-      .textContent = "";
-
-  }
-
-};
-
-
-/*
-==================================================
-LOAD RANKING
-==================================================
-*/
-
-async function loadRanking(){
-
-  if(currentEvent === ""){
-
-    ranking.innerHTML =
-      '<tr><td colspan="4">No active event.</td></tr>';
+  if(!screenshot.files.length){
 
     return;
 
   }
 
-  try{
+  const file =
+    screenshot.files[0];
 
-    ranking.innerHTML =
-      '<tr><td colspan="4">Loading...</td></tr>';
+  fileName.textContent =
+    "📷 " + file.name;
 
-    const snap =
-      await getDocs(
-        collection(
-          db,
-          "community",
-          currentEvent,
-          "times"
-        )
-      );
+  preview.src =
+    URL.createObjectURL(file);
 
-    let players = [];
+  preview.style.display =
+    "block";
 
-    snap.forEach(d=>{
+};
 
-      players.push(d.data());
 
-    });
+/* =========================
+   RANKING
+========================= */
 
-    players.sort(
-      (a,b)=>Number(a.time)-Number(b.time)
+async function loadRanking(){
+
+  if(!currentEvent){
+
+    return;
+
+  }
+
+  const snap =
+    await getDocs(
+      collection(
+        db,
+        "community",
+        currentEvent,
+        "times"
+      )
     );
 
-    ranking.innerHTML = "";
+  let players = [];
 
-    players.forEach((p,i)=>{
+  snap.forEach(d=>{
 
-      const points =
-        Math.max(
-          0,
-          110 - (i+1)*10
-        );
+    const p = d.data();
 
-      ranking.innerHTML += `
+    if(p.status === "approved"){
 
-        <tr>
-
-          <td>${i+1}</td>
-
-          <td>${escapeHTML(p.username)}</td>
-
-          <td>${Number(p.time).toFixed(3)}</td>
-
-          <td>${points}</td>
-
-        </tr>
-
-      `;
-
-    });
-
-    if(players.length === 0){
-
-      ranking.innerHTML =
-        '<tr><td colspan="4">No submissions yet.</td></tr>';
+      players.push(p);
 
     }
 
-  }catch(error){
+  });
 
-    console.error(error);
+
+  players.sort(
+    (a,b)=>
+      Number(a.time)-Number(b.time)
+  );
+
+
+  ranking.innerHTML = "";
+
+
+  players.forEach((p,i)=>{
+
+    const points =
+      calculatePoints(i+1);
+
+    ranking.innerHTML += `
+
+      <tr>
+
+        <td>${i+1}</td>
+
+        <td>${escapeHTML(p.username)}</td>
+
+        <td>
+          ${Number(p.time).toFixed(3)}
+        </td>
+
+        <td>
+          ${points}
+        </td>
+
+      </tr>
+
+    `;
+
+  });
+
+
+  if(players.length === 0){
 
     ranking.innerHTML =
-      '<tr><td colspan="4">Failed to load ranking.</td></tr>';
+      '<tr><td colspan="4">No approved submissions yet.</td></tr>';
 
   }
 
 }
 
 
-/*
-==================================================
-SUBMIT
-==================================================
-*/
+/* =========================
+   POINTS
+========================= */
+
+function calculatePoints(position){
+
+  const points = {
+
+    1:100,
+    2:90,
+    3:80,
+    4:70,
+    5:60,
+    6:50,
+    7:40,
+    8:30,
+    9:20,
+    10:10
+
+  };
+
+  return points[position] || 0;
+
+}
+
+
+/* =========================
+   MY POINTS
+========================= */
+
+async function loadMyPoints(){
+
+  const user =
+    auth.currentUser;
+
+  if(!user){
+
+    myPoints.textContent =
+      "Login required";
+
+    return;
+
+  }
+
+  const snap =
+    await getDoc(
+      doc(db,"users",user.uid)
+    );
+
+  if(snap.exists()){
+
+    const data =
+      snap.data();
+
+    myPoints.textContent =
+      `${data.community || 0} pt`;
+
+  }
+
+}
+
+
+/* =========================
+   SUBMIT
+========================= */
 
 submitBtn.onclick = async()=>{
 
   msg.textContent = "";
 
-  msg.className = "";
-
-  const user = auth.currentUser;
+  const user =
+    auth.currentUser;
 
   if(!user){
 
     msg.textContent =
       "Please login first.";
 
-    msg.className = "error";
+    msg.className =
+      "message error";
 
     return;
 
   }
 
-  /*
-  念のため、提出時にもイベントの時間を確認
-  */
 
   await loadEvent();
+
 
   if(
     !currentEvent ||
@@ -803,206 +840,209 @@ submitBtn.onclick = async()=>{
     msg.textContent =
       "No active event.";
 
-    msg.className = "error";
+    msg.className =
+      "message error";
 
     return;
 
   }
 
 
-  const now = Date.now();
+  const now =
+    Date.now();
 
-  /*
-  終了日時を過ぎていたら拒否
-  */
 
   if(
-    currentEventData._endTime &&
-    now >= currentEventData._endTime
+    now < currentEventData._start ||
+    now >= currentEventData._end
   ){
 
     msg.textContent =
-      "⏰ This event has ended.";
+      "⏰ This event is not active.";
 
-    msg.className = "error";
-
-    await loadEvent();
-
-    await loadRanking();
+    msg.className =
+      "message error";
 
     return;
 
   }
 
 
-  /*
-  開始日時より前なら拒否
-  */
-
-  if(
-    currentEventData._startTime &&
-    now < currentEventData._startTime
-  ){
-
-    msg.textContent =
-      "⏳ This event has not started yet.";
-
-    msg.className = "error";
-
-    return;
-
-  }
-
-
-  const t =
+  const time =
     Number(
       document.getElementById("time").value
     );
 
 
   if(
-    !Number.isFinite(t) ||
-    t <= 0
+    !Number.isFinite(time) ||
+    time <= 0
   ){
 
     msg.textContent =
       "Enter a valid time.";
 
-    msg.className = "error";
+    msg.className =
+      "message error";
 
     return;
 
   }
 
 
-  if(screenshot.files.length === 0){
+  if(!screenshot.files.length){
 
     msg.textContent =
       "Screenshot is required.";
 
-    msg.className = "error";
+    msg.className =
+      "message error";
 
     return;
 
   }
 
 
-  const username =
-    user.email
+  submitBtn.disabled = true;
+
+  msg.textContent =
+    "Uploading screenshot...";
+
+  msg.className =
+    "message info";
+
+
+  try{
+
+    const file =
+      screenshot.files[0];
+
+
+    /*
+    Firebase Storage
+    */
+
+    const storagePath =
+      `community/${currentEvent}/${user.uid}_${Date.now()}`;
+
+    const storageRef =
+      ref(storage,storagePath);
+
+
+    await uploadBytes(
+      storageRef,
+      file
+    );
+
+
+    const screenshotURL =
+      await getDownloadURL(storageRef);
+
+
+    const username =
+      user.email
       ? user.email.replace("@lbns.gg","")
       : "Player";
 
 
-  /*
-  Communityタイム保存
-  */
+    /*
+    Firestore
+    */
 
-  await setDoc(
+    await setDoc(
 
-    doc(
-      db,
-      "community",
-      currentEvent,
-      "times",
-      user.uid
-    ),
+      doc(
+        db,
+        "community",
+        currentEvent,
+        "times",
+        user.uid
+      ),
 
-    {
+      {
 
-      username,
+        username,
 
-      time:t,
+        time,
 
-      submittedAt:Date.now()
+        screenshotURL,
 
-    }
+        submittedAt:Date.now(),
 
-  );
+        status:"pending"
 
+      }
 
-  /*
-  usersにも保存
-  */
-
-  await setDoc(
-
-    doc(
-      db,
-      "users",
-      user.uid
-    ),
-
-    {
-
-      username,
-
-      community:0
-
-    },
-
-    {
-      merge:true
-    }
-
-  );
+    );
 
 
-  msg.textContent =
-    "✅ Time submitted!";
+    msg.textContent =
+      "✅ Submitted! Waiting for approval.";
 
-  msg.className =
-    "success";
-
-
-  screenshot.value = "";
-
-  document.getElementById("fileName")
-    .textContent = "";
+    msg.className =
+      "message success";
 
 
-  await loadRanking();
+    screenshot.value = "";
+
+    fileName.textContent = "";
+
+    preview.style.display =
+      "none";
+
+
+  }catch(error){
+
+    console.error(error);
+
+    msg.textContent =
+      "Failed to submit.";
+
+    msg.className =
+      "message error";
+
+  }
+
+
+  submitBtn.disabled = false;
 
 };
 
 
-/*
-==================================================
-HTML ESCAPE
-==================================================
-*/
+/* =========================
+   ESCAPE
+========================= */
 
 function escapeHTML(value){
 
   return String(value)
+
     .replaceAll("&","&amp;")
+
     .replaceAll("<","&lt;")
+
     .replaceAll(">","&gt;")
+
     .replaceAll('"',"&quot;")
+
     .replaceAll("'","&#039;");
 
 }
 
 
-/*
-==================================================
-INITIAL LOAD
-==================================================
-*/
+/* =========================
+   START
+========================= */
 
 await loadEvent();
 
 await loadRanking();
 
+await loadMyPoints();
+
 
 /*
-==================================================
-定期的にイベント状態を確認
-==================================================
-
-ブラウザを開きっぱなしでも、
-イベント終了後に自動的に次のイベントへ切り替える。
-
-==================================================
+30秒ごとにイベント更新
 */
 
 setInterval(async()=>{
@@ -1010,6 +1050,8 @@ setInterval(async()=>{
   await loadEvent();
 
   await loadRanking();
+
+  await loadMyPoints();
 
 },30000);
 
