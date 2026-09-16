@@ -23,29 +23,27 @@ import {
 ========================================
 FIREBASE CONFIG
 ========================================
-
-ここはあなたのFirebase Consoleにある
-実際の設定値を入れてください。
 */
 
 const firebaseConfig = {
 
-  apiKey: "YOUR_API_KEY",
+  apiKey:
+    "AIzaSyA8xXDmr0TYuIwgg7bVPe1Xoegi3Dkd6Ag",
 
   authDomain:
-    "YOUR_PROJECT.firebaseapp.com",
+    "lolbeans-level-judge.firebaseapp.com",
 
   projectId:
-    "YOUR_PROJECT_ID",
+    "lolbeans-level-judge",
 
   storageBucket:
-    "YOUR_PROJECT.firebasestorage.app",
+    "lolbeans-level-judge.firebasestorage.app",
 
   messagingSenderId:
-    "YOUR_MESSAGING_SENDER_ID",
+    "27831466916",
 
   appId:
-    "YOUR_APP_ID"
+    "1:27831466916:web:f92e4c417f42fa089e5f31"
 
 };
 
@@ -92,79 +90,17 @@ const storage =
 
 /*
 ========================================
-LOGIN
+CONVERT USERNAME TO EMAIL
 ========================================
 
-index.htmlから使用
-*/
+例:
 
-async function login(
-  username,
-  password
-){
+Ryusei
+↓
+ryusei@lbns.gg
 
-  /*
-  LOLBeansのUsernameを
-  Firebase Authenticationの
-  メールアドレスとして使用
-
-  例:
-
-  username:
-  player123
-
-  ↓
-
-  player123@lbns.gg
-  */
-
-  const email =
-    convertUsernameToEmail(
-      username
-    );
-
-
-  return await signInWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
-
-}
-
-
-/*
-========================================
-REGISTER
-========================================
-
-index.htmlから使用
-*/
-
-async function register(
-  username,
-  password
-){
-
-  const email =
-    convertUsernameToEmail(
-      username
-    );
-
-
-  return await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password
-  );
-
-}
-
-
-/*
-========================================
-USERNAME → EMAIL
-========================================
+Firebase Authenticationでは
+このメールアドレスを使用します。
 */
 
 function convertUsernameToEmail(
@@ -186,15 +122,59 @@ function convertUsernameToEmail(
   }
 
 
-  /*
-  Firebase用の仮想メールアドレス
-
-  username
-  ↓
-  username@lbns.gg
-  */
-
   return name + "@lbns.gg";
+
+}
+
+
+/*
+========================================
+LOGIN
+========================================
+*/
+
+async function login(
+  username,
+  password
+){
+
+  const email =
+    convertUsernameToEmail(
+      username
+    );
+
+
+  return await signInWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
+
+}
+
+
+/*
+========================================
+REGISTER
+========================================
+*/
+
+async function register(
+  username,
+  password
+){
+
+  const email =
+    convertUsernameToEmail(
+      username
+    );
+
+
+  return await createUserWithEmailAndPassword(
+    auth,
+    email,
+    password
+  );
 
 }
 
