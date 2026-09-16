@@ -1185,26 +1185,16 @@ START
 */
 
 auth.onAuthStateChanged(
-
   async user=>{
-
-    /*
-    ログイン確認
-    */
 
     if(!user){
 
-      document.body.innerHTML =
-        "<h1>Please login first.</h1>";
+      location.href = "index.html";
 
       return;
 
     }
 
-
-    /*
-    管理者確認
-    */
 
     if(
       !ADMIN_EMAILS.includes(
@@ -1221,19 +1211,9 @@ auth.onAuthStateChanged(
     }
 
 
-    /*
-    管理者なら読み込み
-    */
-
     await loadEvents();
 
     await loadSubmissions();
 
   }
-
 );
-
-</script>
-
-</body>
-</html>
