@@ -12,26 +12,57 @@ body{
   background:#0f172a;
   color:white;
 }
+
 .container{
   max-width:900px;
   margin:auto;
   padding:20px;
 }
+
 .card{
   background:#1e293b;
   border-radius:16px;
   padding:20px;
   margin-bottom:20px;
 }
-input{
+
+input[type="range"]{
   width:100%;
   margin:8px 0;
 }
+
+input[type="text"]{
+  width:100%;
+  box-sizing:border-box;
+  padding:12px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #475569;
+  background:#0f172a;
+  color:white;
+  font-size:16px;
+}
+
+button{
+  padding:12px 18px;
+  border:none;
+  border-radius:8px;
+  background:#7c3aed;
+  color:white;
+  cursor:pointer;
+  font-size:15px;
+}
+
+button:hover{
+  background:#8b5cf6;
+}
+
 .nav{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
 }
+
 .nav a{
   text-decoration:none;
   color:white;
@@ -39,8 +70,17 @@ input{
   padding:10px 14px;
   border-radius:8px;
 }
+
+.nav a:hover{
+  background:#475569;
+}
+
+#msg{
+  margin-top:12px;
+}
 </style>
 </head>
+
 <body>
 
 <div class="container">
@@ -52,43 +92,113 @@ input{
 </div>
 
 <div class="card">
+
+  <h2>👤 Username</h2>
+
+  <p>
+    Choose the name that will be shown on the rankings.
+  </p>
+
+  <input
+    type="text"
+    id="usernameInput"
+    maxlength="20"
+    placeholder="Enter your username"
+  >
+
+  <p id="usernameMsg"></p>
+
+</div>
+
+<div class="card">
+
   <div class="nav">
     <a href="community.html">🌍 Community</a>
     <a href="ranking.html">🏆 Rankings</a>
     <a href="admin.html">👑 Admin</a>
   </div>
+
 </div>
 
 <div class="card">
+
   <h2>⏱ Speedrun</h2>
-  <input id="speed" type="range" min="490" max="1200" value="1200">
-  <p>Time: <span id="speedValue">1200</span></p>
+
+  <input
+    id="speed"
+    type="range"
+    min="490"
+    max="1200"
+    value="1200"
+  >
+
+  <p>
+    Time:
+    <span id="speedValue">1200</span>
+  </p>
+
   <p id="speedPts">0 / 300</p>
+
 </div>
 
 <div class="card">
+
   <h2>🏆 Battle Royale Wins</h2>
-  <input id="wins" type="range" min="0" max="10000" value="0">
-  <p>Wins: <span id="winsValue">0</span></p>
+
+  <input
+    id="wins"
+    type="range"
+    min="0"
+    max="10000"
+    value="0"
+  >
+
+  <p>
+    Wins:
+    <span id="winsValue">0</span>
+  </p>
+
   <p id="winPts">0 / 100</p>
+
 </div>
 
 <div class="card">
+
   <h2>🏷 Tag Score</h2>
-  <input id="tag" type="range" min="0" max="2000" value="0">
-  <p>Score: <span id="tagValue">0</span></p>
+
+  <input
+    id="tag"
+    type="range"
+    min="0"
+    max="2000"
+    value="0"
+  >
+
+  <p>
+    Score:
+    <span id="tagValue">0</span>
+  </p>
+
   <p id="tagPts">0 / 50</p>
+
 </div>
 
 <div class="card">
+
   <h2>🌍 Community</h2>
+
   <h3 id="community">0 pt</h3>
+
   <p>Monthly Community Points</p>
+
 </div>
 
 <div class="card">
+
   <button id="saveBtn">💾 Save Stats</button>
+
   <p id="msg"></p>
+
 </div>
 
 </div>
@@ -96,115 +206,319 @@ input{
 <script type="module">
 
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import {
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
 import {
   doc,
   getDoc,
   setDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const speed=document.getElementById("speed");
-const wins=document.getElementById("wins");
-const tag=document.getElementById("tag");
 
-let communityPoints=0;
-let currentUID="";
-let currentUsername="";
+const speed = document.getElementById("speed");
+const wins = document.getElementById("wins");
+const tag = document.getElementById("tag");
+
+const usernameDisplay =
+  document.getElementById("username");
+
+const usernameInput =
+  document.getElementById("usernameInput");
+
+const usernameMsg =
+  document.getElementById("usernameMsg");
+
+const saveBtn =
+  document.getElementById("saveBtn");
+
+const msg =
+  document.getElementById("msg");
+
+
+let currentUID = "";
+let currentUsername = "";
+let communityPoints = 0;
+
+
+/* =========================
+   CALCULATE SCORE
+========================= */
 
 function calc(){
 
-  const s=Math.max(0,Math.min(300,
-    Math.round((1200-Number(speed.value))/710*300)
-  ));
+  const speedPoints = Math.max(
+    0,
+    Math.min(
+      300,
+      Math.round(
+        (1200 - Number(speed.value))
+        / 710
+        * 300
+      )
+    )
+  );
 
-  const w=Math.round((Number(wins.value)/10000)*100);
-  const t=Math.round((Number(tag.value)/2000)*50);
+  const winPoints =
+    Math.round(
+      (Number(wins.value) / 10000) * 100
+    );
 
-  const total=s+w+t+communityPoints;
+  const tagPoints =
+    Math.round(
+      (Number(tag.value) / 2000) * 50
+    );
 
-  document.getElementById("speedValue").textContent=speed.value;
-  document.getElementById("winsValue").textContent=wins.value;
-  document.getElementById("tagValue").textContent=tag.value;
+  const total =
+    speedPoints +
+    winPoints +
+    tagPoints +
+    communityPoints;
 
-  document.getElementById("speedPts").textContent=s+" / 300";
-  document.getElementById("winPts").textContent=w+" / 100";
-  document.getElementById("tagPts").textContent=t+" / 50";
 
-  document.getElementById("total").textContent=total+" / 550";
+  document.getElementById("speedValue").textContent =
+    speed.value;
 
-  let grade="D";
-  if(total>=500) grade="SS";
-  else if(total>=400) grade="S";
-  else if(total>=300) grade="A";
-  else if(total>=200) grade="B";
-  else if(total>=100) grade="C";
+  document.getElementById("winsValue").textContent =
+    wins.value;
 
-  document.getElementById("grade").textContent=grade;
+  document.getElementById("tagValue").textContent =
+    tag.value;
 
-  return {s,w,t,total,grade};
+
+  document.getElementById("speedPts").textContent =
+    speedPoints + " / 300";
+
+  document.getElementById("winPts").textContent =
+    winPoints + " / 100";
+
+  document.getElementById("tagPts").textContent =
+    tagPoints + " / 50";
+
+
+  document.getElementById("total").textContent =
+    total + " / 550";
+
+
+  let grade = "D";
+
+  if(total >= 500)
+    grade = "SS";
+
+  else if(total >= 400)
+    grade = "S";
+
+  else if(total >= 300)
+    grade = "A";
+
+  else if(total >= 200)
+    grade = "B";
+
+  else if(total >= 100)
+    grade = "C";
+
+
+  document.getElementById("grade").textContent =
+    grade;
+
+
+  return {
+    speedPoints,
+    winPoints,
+    tagPoints,
+    total,
+    grade
+  };
 }
 
-speed.oninput=calc;
-wins.oninput=calc;
-tag.oninput=calc;
 
-onAuthStateChanged(auth, async(user)=>{
+/* =========================
+   SLIDER EVENTS
+========================= */
+
+speed.oninput = calc;
+wins.oninput = calc;
+tag.oninput = calc;
+
+
+/* =========================
+   LOGIN
+========================= */
+
+onAuthStateChanged(auth, async(user) => {
 
   if(!user){
-    location.href="index.html";
+
+    location.href = "index.html";
+
     return;
   }
 
-  currentUID=user.uid;
-  currentUsername=user.email.replace("@lbns.gg","");
 
-  document.getElementById("username").textContent=currentUsername;
+  currentUID = user.uid;
 
-  const ref=doc(db,"users",user.uid);
-  const snap=await getDoc(ref);
+
+  const userRef =
+    doc(db, "users", user.uid);
+
+  const snap =
+    await getDoc(userRef);
+
 
   if(snap.exists()){
 
-    const d=snap.data();
+    const data = snap.data();
 
-    speed.value=d.speedrun||1200;
-    wins.value=d.wins||0;
-    tag.value=d.tag||0;
 
-    communityPoints=d.community||0;
+    /* Username */
 
-    document.getElementById("community").textContent=
-      communityPoints+" pt";
+    if(data.username){
+
+      currentUsername =
+        data.username;
+
+      usernameInput.value =
+        data.username;
+
+      usernameDisplay.textContent =
+        data.username;
+
+    }
+
+
+    /* Stats */
+
+    speed.value =
+      data.speedrun ?? 1200;
+
+    wins.value =
+      data.wins ?? 0;
+
+    tag.value =
+      data.tag ?? 0;
+
+
+    communityPoints =
+      data.community ?? 0;
+
+
+    document.getElementById(
+      "community"
+    ).textContent =
+      communityPoints + " pt";
+
   }
+
 
   calc();
 
 });
 
-document.getElementById("saveBtn").onclick=async()=>{
 
-  const score=calc();
+/* =========================
+   SAVE
+========================= */
 
-  await setDoc(
-    doc(db,"users",currentUID),
-    {
-      username:currentUsername,
-      speedrun:Number(speed.value),
-      wins:Number(wins.value),
-      tag:Number(tag.value),
-      community:communityPoints,
-      total:score.total,
-      grade:score.grade
-    },
-    {merge:true}
-  );
+saveBtn.onclick = async() => {
 
-  document.getElementById("msg").textContent=
-    "✅ Saved!";
+  if(!currentUID){
+
+    msg.textContent =
+      "❌ Please login first.";
+
+    return;
+  }
+
+
+  const username =
+    usernameInput.value.trim();
+
+
+  if(!username){
+
+    usernameMsg.textContent =
+      "❌ Please enter a username.";
+
+    return;
+  }
+
+
+  if(username.length < 3){
+
+    usernameMsg.textContent =
+      "❌ Username must be at least 3 characters.";
+
+    return;
+  }
+
+
+  usernameMsg.textContent = "";
+
+
+  currentUsername =
+    username;
+
+
+  const score =
+    calc();
+
+
+  try{
+
+    await setDoc(
+      doc(db, "users", currentUID),
+      {
+
+        username: currentUsername,
+
+        speedrun:
+          Number(speed.value),
+
+        wins:
+          Number(wins.value),
+
+        tag:
+          Number(tag.value),
+
+        community:
+          communityPoints,
+
+        total:
+          score.total,
+
+        grade:
+          score.grade
+
+      },
+      {
+        merge:true
+      }
+    );
+
+
+    usernameDisplay.textContent =
+      currentUsername;
+
+
+    msg.textContent =
+      "✅ Saved successfully!";
+
+
+  }catch(error){
+
+    console.error(error);
+
+    msg.textContent =
+      "❌ Failed to save: " +
+      error.message;
+
+  }
 
 };
 
 </script>
 
 </body>
-</html> 
+</html>
