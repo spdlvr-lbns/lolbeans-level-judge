@@ -15,7 +15,7 @@ body{
 }
 .card{
   max-width:900px;
-  margin:auto;
+  margin:0 auto 20px;
   background:#1e293b;
   border-radius:16px;
   padding:20px;
@@ -23,9 +23,9 @@ body{
 input{
   width:100%;
   padding:12px;
+  margin:8px 0;
   border:none;
   border-radius:8px;
-  margin:10px 0;
   box-sizing:border-box;
 }
 button{
@@ -36,74 +36,62 @@ button{
   color:white;
   cursor:pointer;
 }
+.remove{
+  background:#dc2626;
+}
 table{
   width:100%;
   border-collapse:collapse;
-  margin-top:20px;
 }
 th,td{
   padding:12px;
   border-bottom:1px solid #334155;
   text-align:left;
 }
-.hidden{
-  display:none;
-}
-.remove{
-  background:#dc2626;
-}
-.live{
-  color:#22c55e;
-}
-.removed{
-  color:#ef4444;
-}
+.hidden{display:none;}
+.success{color:#22c55e;}
 </style>
-
 </head>
 <body>
 
-
-
-<div class="card hidden" id="panel">
+<div id="panel" class="hidden">
 
   <div class="card">
-  <h2>👑 Create Community Event</h2>
+    <h2>👑 Create Community Event</h2>
 
-  <input id="eventName" placeholder="September Challenge">
+    <input id="eventName" placeholder="September Challenge">
+    <input id="eventMap" placeholder="Speeder's Speedrun 2">
 
-  <input id="eventMap" placeholder="level name">
+    <label>Start</label>
+    <input id="startDate" type="date">
 
-  <label>Start</label>
-  <input id="startDate" type="date">
+    <label>End</label>
+    <input id="endDate" type="date">
 
-  <label>End</label>
-  <input id="endDate" type="date">
+    <button id="createEvent">Create Event</button>
 
-  <button id="createEvent">Create Event</button>
+    <p id="eventMsg"></p>
+  </div>
 
-  <p id="eventMsg"></p>
-</div>
-  <h2>🏁 Community Submissions</h2>
+  <div class="card">
+    <h2>🏁 Community Submissions</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Player</th>
-        <th>Time</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
+    <table>
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Time</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
 
-    <tbody id="list"></tbody>
-
-  </table>
+  </div>
 
 </div>
 
 <script type="module">
-
 import { db, auth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
@@ -111,42 +99,45 @@ import {
   collection,
   getDocs,
   doc,
-  updateDoc,
-  setDoc
+  setDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
 const ADMIN_EMAIL = "test123@lbns.gg";
 const list = document.getElementById("list");
 
-onAuthStateChanged(auth, (user) => {
+// Admin check
+onAuthStateChanged(auth, (user)=>{
 
-onAuthStateChanged(auth, (user) => {
-
-  if (!user) {
-    location.href = "index.html";
+  if(!user){
+    location.href="index.html";
     return;
   }
 
-  if (user.email !== ADMIN_EMAIL) {
-    document.body.innerHTML =
-      "<h1 style='color:white;text-align:center'>Access Denied</h1>";
+  if(user.email!==ADMIN_EMAIL){
+    document.body.innerHTML="<h1>Access Denied</h1>";
     return;
   }
 
   document.getElementById("panel").classList.remove("hidden");
   load();
-document.getElementById("createEvent").addEventListener("click", async () => {
 
-  const name = document.getElementById("eventName").value;
-  const map = document.getElementById("eventMap").value;
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
+});
 
-  if (!name || !map) {
-    document.getElementById("eventMsg").textContent = "Enter event name and map";
+// Create Event
+document.getElementById("createEvent").addEventListener("click", async()=>{
+
+  const name=document.getElementById("eventName").value.trim();
+  const map=document.getElementById("eventMap").value.trim();
+  const start=document.getElementById("startDate").value;
+  const end=document.getElementById("endDate").value;
+
+  if(!name || !map){
+    document.getElementById("eventMsg").textContent="Fill in Event Name and Map";
     return;
   }
 
-  const id = name.toLowerCase().replace(/\s+/g,"-");
+  const id=name.toLowerCase().replace(/\s+/g,"-");
 
   await setDoc(doc(db,"events",id),{
     name,
@@ -156,123 +147,55 @@ document.getElementById("createEvent").addEventListener("click", async () => {
     active:true
   });
 
-  document.getElementById("eventMsg").textContent = "✅ Event Created!";
-});
-  
-document
-.getElementById("createEvent")
-.addEventListener("click", async()=>{
-
-  const name =
-    document.getElementById("eventName").value;
-
-  const map =
-    document.getElementById("eventMap").value;
-
-  const start =
-    document.getElementById("startDate").value;
-
-  const end =
-    document.getElementById("endDate").value;
-
-  if(!name || !map){
-    return;
-  }
-
-  const id =
-    name.toLowerCase().replaceAll(" ","-");
-
-  await setDoc(
-    doc(db,"events",id),
-    {
-      name,
-      map,
-      start,
-      end,
-      active:true
-    }
-  );
-
-  document.getElementById("eventMsg")
-    .textContent = "Event Created!";
-
-});
-});
-
-  if (user.email !== ADMIN_EMAIL) {
-    document.body.innerHTML =
-      "<h1 style='color:white;text-align:center'>Access Denied</h1>";
-    return;
-  }
-
-  document.getElementById("panel").classList.remove("hidden");
-  load();
+  document.getElementById("eventMsg").innerHTML=
+    "<span class='success'>✅ Event Created!</span>";
 
 });
 
+// Load submissions
 async function load(){
 
   list.innerHTML="";
 
-  const snap = await getDocs(
-    collection(
-      db,
-      "community",
-      "september2026",
-      "times"
-    )
+  const snap=await getDocs(
+    collection(db,"community","september2026","times")
   );
 
   snap.forEach(d=>{
 
     const p=d.data();
 
-    list.innerHTML += `
+    list.innerHTML+=`
       <tr>
         <td>${p.username}</td>
         <td>${Number(p.time).toFixed(3)}</td>
-        <td class="${p.invalid?"removed":"live"}">
-          ${p.invalid?"Removed":"Live"}
-        </td>
         <td>
-          ${
-            p.invalid
-            ? "-"
-            : `<button class="remove" data-id="${d.id}">
-                 🗑 Remove
-               </button>`
-          }
+          <button class="remove" data-id="${d.id}">
+            🗑 Delete
+          </button>
         </td>
       </tr>
     `;
 
   });
 
-  document
-    .querySelectorAll(".remove")
-    .forEach(btn=>{
+  document.querySelectorAll(".remove").forEach(btn=>{
 
-      btn.addEventListener("click",async()=>{
+    btn.onclick=async()=>{
 
-        await updateDoc(
-          doc(
-            db,
-            "community",
-            "september2026",
-            "times",
-            btn.dataset.id
-          ),
-          { invalid:true }
-        );
+      if(!confirm("Delete this record?")) return;
 
-        load();
+      await deleteDoc(
+        doc(db,"community","september2026","times",btn.dataset.id)
+      );
 
-      });
+      load();
 
-    });
+    };
+
+  });
 
 }
-
 </script>
 
 </body>
