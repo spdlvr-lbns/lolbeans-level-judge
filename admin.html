@@ -45,18 +45,59 @@ th,td{padding:10px;border-bottom:1px solid #334155;text-align:left;}
 </table>
 </div>
 
-<script>
-const ADMIN_PASSWORD = "lolbeans2026";
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-function login(){
- const pass=document.getElementById("adminPass").value;
- if(pass===ADMIN_PASSWORD){
-   document.getElementById("loginBox").classList.add("hidden");
-   document.getElementById("panel").classList.remove("hidden");
- }else{
-   document.getElementById("msg").innerText="Wrong password";
- }
+const tbody = document.getElementById("list");
+
+async function load(){
+
+  tbody.innerHTML = "";
+
+  const snap = await getDocs(
+    collection(db,"community","september2026","times")
+  );
+
+  snap.forEach(d=>{
+
+    const p = d.data();
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.username}</td>
+        <td>${p.time.toFixed(3)}</td>
+        <td>${p.approved ? "Approved" : "Pending"}</td>
+        <td>
+          <button onclick="approve('${d.id}')">
+            ✓
+          </button>
+        </td>
+      </tr>
+    `;
+
+  });
+
 }
+
+window.approve = async(id)=>{
+
+  await updateDoc(
+    doc(db,"community","september2026","times",id),
+    { approved:true }
+  );
+
+  load();
+
+};
+
+load();
+</script>
 </script>
 
 </body>
