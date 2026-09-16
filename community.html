@@ -165,12 +165,14 @@ document.getElementById("submitBtn").onclick=async()=>{
   const username=user.email.replace("@lbns.gg","");
 
   await setDoc(
-    doc(db,"community","september2026","times",user.uid),
-    {
-      username,
-      time:t
-    }
-  );
+  doc(db,"community","september2026","times",user.uid),
+  {
+    username,
+    time:t,
+    points:0,
+    rank:0
+  }
+);
 
   msg.textContent="Time submitted!";
   loadRanking();
