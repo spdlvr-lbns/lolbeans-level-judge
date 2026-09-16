@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<style>
+body{margin:0;font-family:Arial;background:#0f172a;color:white;padding:20px;}
+.card{background:#1e293b;border-radius:15px;padding:20px;max-width:900px;margin:auto;}
+input{width:100%;padding:10px;border:none;border-radius:8px;margin:10px 0;}
+button{padding:10px 16px;background:#7c3aed;color:white;border:none;border-radius:8px;cursor:pointer;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:10px;border-bottom:1px solid #334155;text-align:left;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div class="card" id="loginBox">
+<h2>🔒 Admin Login</h2>
+<input id="adminPass" type="password" placeholder="Admin Password">
+<button onclick="login()">Login</button>
+<p id="msg"></p>
+</div>
+
+<div class="card hidden" id="panel">
+<h2>🏁 Community Submissions</h2>
+<p>Only approved submissions count.</p>
+
+<table>
+<thead>
+<tr>
+<th>Player</th>
+<th>Time</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="list">
+<tr>
+<td>ExamplePlayer</td>
+<td>28.442</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "lolbeans2026";
+
+function login(){
+ const pass=document.getElementById("adminPass").value;
+ if(pass===ADMIN_PASSWORD){
+   document.getElementById("loginBox").classList.add("hidden");
+   document.getElementById("panel").classList.remove("hidden");
+ }else{
+   document.getElementById("msg").innerText="Wrong password";
+ }
+}
+</script>
+
+</body>
+</html>
