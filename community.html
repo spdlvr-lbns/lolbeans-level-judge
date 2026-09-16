@@ -119,18 +119,22 @@ a{
   color:#c4b5fd;
 }
 
-.preview{
-  max-width:100%;
-  max-height:300px;
-  margin-top:10px;
-  border-radius:10px;
-  display:none;
-}
-
 .points{
   font-size:28px;
   font-weight:bold;
   color:#c4b5fd;
+}
+
+.help{
+  background:#312e81;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+  line-height:1.6;
+}
+
+.screenshot-link{
+  margin-top:10px;
 }
 
 </style>
@@ -175,21 +179,43 @@ Loading event...
 >
 
 <label>
-Screenshot (Required)
+Screenshot URL (Required)
 </label>
 
 <input
-  id="screenshot"
-  type="file"
-  accept="image/*"
+  id="screenshotURL"
+  type="url"
+  placeholder="https://d.kuku.lu/..."
 >
 
-<p id="fileName"></p>
+<div class="help">
 
-<img
-  id="preview"
-  class="preview"
+<b>📷 How to upload your screenshot</b>
+
+<br><br>
+
+1. Take a screenshot of your result.<br>
+
+2. Open
+<a
+  href="https://d.kuku.lu/"
+  target="_blank"
+  rel="noopener noreferrer"
 >
+d.kuku.lu
+</a>.
+
+<br>
+
+3. Upload your screenshot there.<br>
+
+4. Copy the URL you receive.<br>
+
+5. Paste the URL into the box above.
+
+</div>
+
+<p id="urlStatus"></p>
 
 <button id="submitBtn">
 Submit Time
@@ -249,8 +275,7 @@ Loading...
 
 import {
   auth,
-  db,
-  storage
+  db
 } from "./firebase.js";
 
 
@@ -262,14 +287,6 @@ import {
   getDoc
 } from
 "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
-
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from
-"https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
 
 const eventTitle =
@@ -293,14 +310,11 @@ const submissionCard =
 const submitBtn =
   document.getElementById("submitBtn");
 
-const screenshot =
-  document.getElementById("screenshot");
+const screenshotURLInput =
+  document.getElementById("screenshotURL");
 
-const fileName =
-  document.getElementById("fileName");
-
-const preview =
-  document.getElementById("preview");
+const urlStatus =
+  document.getElementById("urlStatus");
 
 const msg =
   document.getElementById("msg");
@@ -730,17 +744,18 @@ function startCountdown(
 
 
 /* =========================
-   IMAGE PREVIEW
+   URL CHECK
 ========================= */
 
-screenshot.onchange = ()=>{
+screenshotURLInput.oninput = ()=>{
 
-  if(!screenshot.files.length){
+  const value =
+    screenshotURLInput.value.trim();
 
-    preview.style.display =
-      "none";
 
-    fileName.textContent =
+  if(!value){
+
+    urlStatus.textContent =
       "";
 
     return;
@@ -748,20 +763,37 @@ screenshot.onchange = ()=>{
   }
 
 
-  const file =
-    screenshot.files[0];
+  try{
+
+    const url =
+      new URL(value);
 
 
-  fileName.textContent =
-    "📷 " + file.name;
+    if(
+      url.protocol !== "http:" &&
+      url.protocol !== "https:"
+    ){
+
+      throw new Error();
+
+    }
 
 
-  preview.src =
-    URL.createObjectURL(file);
+    urlStatus.textContent =
+      "✅ URL looks valid.";
 
+    urlStatus.className =
+      "message success";
 
-  preview.style.display =
-    "block";
+  }catch{
+
+    urlStatus.textContent =
+      "❌ Please enter a valid URL.";
+
+    urlStatus.className =
+      "message error";
+
+  }
 
 };
 
@@ -1058,12 +1090,14 @@ submitBtn.onclick = async()=>{
   }
 
 
-  if(
-    !screenshot.files.length
-  ){
+  const screenshotURL =
+    screenshotURLInput.value.trim();
+
+
+  if(!screenshotURL){
 
     msg.textContent =
-      "Screenshot is required.";
+      "Screenshot URL is required.";
 
     msg.className =
       "message error";
@@ -1074,21 +1108,29 @@ submitBtn.onclick = async()=>{
 
 
   /*
-    Check file size.
-    10 MB maximum.
+    Check URL
   */
 
-  const file =
-    screenshot.files[0];
+  let parsedURL;
 
+  try{
 
-  if(
-    file.size >
-    10 * 1024 * 1024
-  ){
+    parsedURL =
+      new URL(screenshotURL);
+
+    if(
+      parsedURL.protocol !== "http:" &&
+      parsedURL.protocol !== "https:"
+    ){
+
+      throw new Error();
+
+    }
+
+  }catch{
 
     msg.textContent =
-      "❌ Screenshot must be 10 MB or smaller.";
+      "❌ Please enter a valid screenshot URL.";
 
     msg.className =
       "message error";
@@ -1103,7 +1145,7 @@ submitBtn.onclick = async()=>{
 
 
   msg.textContent =
-    "Uploading screenshot...";
+    "Checking your submission...";
 
   msg.className =
     "message info";
@@ -1141,49 +1183,6 @@ submitBtn.onclick = async()=>{
 
     const username =
       userSnap.data().username;
-
-
-    /*
-      Upload screenshot
-    */
-
-    msg.textContent =
-      "📤 Uploading screenshot...";
-
-
-    const storagePath =
-      `community/${currentEvent}/${user.uid}_${Date.now()}`;
-
-
-    const storageRef =
-      ref(
-        storage,
-        storagePath
-      );
-
-
-    await uploadBytes(
-      storageRef,
-      file,
-      {
-        contentType:
-          file.type || "image/jpeg"
-      }
-    );
-
-
-    /*
-      Get screenshot URL
-    */
-
-    msg.textContent =
-      "🔗 Saving screenshot...";
-
-
-    const screenshotURL =
-      await getDownloadURL(
-        storageRef
-      );
 
 
     /*
@@ -1233,17 +1232,11 @@ submitBtn.onclick = async()=>{
       "message success";
 
 
-    screenshot.value =
+    screenshotURLInput.value =
       "";
 
-    fileName.textContent =
+    urlStatus.textContent =
       "";
-
-    preview.src =
-      "";
-
-    preview.style.display =
-      "none";
 
 
   }catch(error){
