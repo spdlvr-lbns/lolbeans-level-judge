@@ -57,7 +57,20 @@ import {
 
 const ADMIN_PASSWORD = "lolbeans2026";
 const tbody = document.getElementById("list");
+const ADMIN_PASSWORD = "lolbeans2026";
 
+document.getElementById("loginBtn").addEventListener("click", () => {
+  const pass = document.getElementById("adminPass").value;
+
+  if (pass === ADMIN_PASSWORD) {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("panel").classList.remove("hidden");
+    load();
+  } else {
+    document.getElementById("msg").textContent = "Wrong password";
+  }
+});
+  
 window.login = () => {
   const pass = document.getElementById("adminPass").value;
 
