@@ -1,147 +1,47 @@
+
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registered Users</title>
 
 <style>
-
-body{
-  margin:0;
-  background:#0f172a;
-  color:white;
-  font-family:Arial,sans-serif;
-  padding:20px;
-}
-
-.container{
-  max-width:900px;
-  margin:auto;
-}
-
-.card{
-  background:#1e293b;
-  border-radius:14px;
-  padding:20px;
-}
-
-h1,h2{
-  margin-top:0;
-}
-
-#status{
-  color:#cbd5e1;
-  margin-bottom:15px;
-}
-
-#loginBtn{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:#4285F4;
-  color:white;
-  font-size:16px;
-  cursor:pointer;
-  display:none;
-  margin-bottom:15px;
-}
-
-.user{
-  background:#334155;
-  border-radius:10px;
-  padding:14px;
-  margin-top:10px;
-}
-
-.username{
-  font-size:18px;
-  font-weight:bold;
-}
-
-.info{
-  margin-top:6px;
-  color:#bfdbfe;
-}
-
-.time{
-  margin-top:6px;
-  color:#cbd5e1;
-  font-size:14px;
-}
-
-.empty{
-  color:#94a3b8;
-  padding:20px 0;
-}
-
-.count{
-  color:#94a3b8;
-  font-size:14px;
-  margin-bottom:15px;
-}
-
+body{margin:0;background:#0f172a;color:#fff;font-family:Arial,sans-serif;padding:20px}
+.container{max-width:900px;margin:auto}
+.card{background:#1e293b;border-radius:14px;padding:20px}
+h1,h2{margin-top:0}
+#status{color:#cbd5e1;margin-bottom:15px}
+#loginBtn{width:100%;padding:12px;border:none;border-radius:10px;background:#4285F4;color:#fff;font-size:16px;cursor:pointer;display:none;margin-bottom:15px}
+.user{background:#334155;border-radius:10px;padding:14px;margin-top:10px}
+.username{font-size:18px;font-weight:bold}
+.info{margin-top:6px;color:#bfdbfe}
+.time{margin-top:6px;color:#cbd5e1;font-size:14px}
+.empty{color:#94a3b8;padding:20px 0}
+.count{color:#94a3b8;font-size:14px;margin-bottom:15px}
+.deleteBtn{margin-top:12px;width:100%;padding:10px;border:none;border-radius:8px;background:#dc2626;color:#fff;cursor:pointer;font-weight:bold}
+.deleteBtn:hover{background:#b91c1c}
 </style>
-
 </head>
 
 <body>
-
 <div class="container">
+  <h1>👥 Registered Users</h1>
 
-<h1>👥 Registered Users</h1>
+  <div class="card">
+    <p id="status">Checking admin...</p>
 
-<div class="card">
+    <button id="loginBtn">🔐 Sign in with Google</button>
 
-<p id="status">
-Checking admin...
-</p>
-
-<button id="loginBtn">
-🔐 Sign in with Google
-</button>
-
-<h2>📋 All Registered Users</h2>
-
-<div id="count" class="count"></div>
-
-<div id="users">
-
-<div class="empty">
-Loading...
+    <h2>📋 All Registered Users</h2>
+    <div id="count" class="count"></div>
+    <div id="users"><div class="empty">Loading...</div></div>
+  </div>
 </div>
-
-</div>
-
-</div>
-
-</div>
-
 
 <script type="module">
-
-
-import {
-  auth,
-  db,
-  loginWithGoogle
-} from "./firebase.js";
-
-
-import {
-  onAuthStateChanged
-} from
-"https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-
-
+import { auth, db, loginWithGoogle } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 import {
   collection,
   getDocs,
@@ -149,505 +49,173 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const FUNCTION_URL =
-"https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
+const FUNCTION_URL="https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
 
-
-const ADMIN_EMAILS = [
-
+const ADMIN_EMAILS=[
   "spdlvr83@gmail.com",
-
   "grgt1462@gmail.com",
-
   "shinobilolbean@gmail.com"
-
 ];
 
+const status=document.getElementById("status");
+const usersElement=document.getElementById("users");
+const countElement=document.getElementById("count");
+const loginBtn=document.getElementById("loginBtn");
 
-const status =
-document.getElementById("status");
-
-const usersElement =
-document.getElementById("users");
-
-const countElement =
-document.getElementById("count");
-
-const loginBtn =
-document.getElementById("loginBtn");
-
-
-// ==============================
-// Google Login
-// ==============================
-
-loginBtn.onclick = async () => {
-
+loginBtn.onclick=async()=>{
   try{
-
     await loginWithGoogle();
-
-  }catch(error){
-
-    console.error(error);
-
-    status.textContent =
-      "❌ Login failed";
-
+  }catch{
+    status.textContent="❌ Login failed";
   }
-
 };
 
-
-// ==============================
-// Flag
-// ==============================
-
 function getFlag(country){
-
-  const flags = {
-
-    "Japan":"🇯🇵",
-    "Thailand":"🇹🇭",
-    "South Korea":"🇰🇷",
-    "Singapore":"🇸🇬",
-    "Malaysia":"🇲🇾",
-    "United States":"🇺🇸",
-    "United Kingdom":"🇬🇧",
-    "Australia":"🇦🇺",
-    "Indonesia":"🇮🇩",
-    "Philippines":"🇵🇭",
-    "Taiwan":"🇹🇼",
-    "China":"🇨🇳",
-    "Canada":"🇨🇦",
-    "France":"🇫🇷",
-    "Germany":"🇩🇪",
-    "Italy":"🇮🇹",
-    "Spain":"🇪🇸",
-    "Brazil":"🇧🇷",
-    "Vietnam":"🇻🇳",
-    "India":"🇮🇳"
-
+  const flags={
+    "Japan":"🇯🇵","Thailand":"🇹🇭","South Korea":"🇰🇷",
+    "Singapore":"🇸🇬","Malaysia":"🇲🇾","United States":"🇺🇸",
+    "United Kingdom":"🇬🇧","Australia":"🇦🇺","Indonesia":"🇮🇩",
+    "Philippines":"🇵🇭","Taiwan":"🇹🇼","China":"🇨🇳",
+    "Canada":"🇨🇦","France":"🇫🇷","Germany":"🇩🇪",
+    "Italy":"🇮🇹","Spain":"🇪🇸","Brazil":"🇧🇷",
+    "Vietnam":"🇻🇳","India":"🇮🇳"
   };
-
   return flags[country] || "🌍";
-
 }
 
-
-// ==============================
-// Format time
-// ==============================
-
-function formatTime(accessTime){
-
-  if(!accessTime){
-    return "No access record";
-  }
-
-  const date =
-    new Date(accessTime);
-
-  if(isNaN(date.getTime())){
-    return "Unknown";
-  }
-
-  return date.toLocaleString(
-    "ja-JP",
-    {
-      year:"numeric",
-      month:"2-digit",
-      day:"2-digit",
-      hour:"2-digit",
-      minute:"2-digit",
-      second:"2-digit"
-    }
-  );
-
+function formatTime(time){
+  if(!time) return "No access record";
+  const d=new Date(time);
+  if(isNaN(d)) return "Unknown";
+  return d.toLocaleString("ja-JP",{
+    year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",second:"2-digit"
+  });
 }
 
-
-// ==============================
-// Load latest access records
-// ==============================
+function escapeHTML(v){
+  return String(v)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 
 async function loadAccessLogs(){
-
   try{
-
-    const response =
-      await fetch(FUNCTION_URL);
-
-    if(!response.ok){
-      throw new Error(
-        "Failed to load access records"
-      );
-    }
-
-    const data =
-      await response.json();
-
-    const logs =
-      Array.isArray(data.logs)
-        ? data.logs
-        : [];
-
-    return logs;
-
-  }catch(error){
-
-    console.warn(
-      "Access logs could not be loaded:",
-      error
-    );
-
+    const res=await fetch(FUNCTION_URL);
+    const data=await res.json();
+    return Array.isArray(data.logs)?data.logs:[];
+  }catch{
     return [];
-
   }
-
 }
 
-
-// ==============================
-// Load ALL registered users
-// ==============================
-
-async function loadUsers(){
-
-  try{
-
-    status.textContent =
-      "Loading registered users...";
-
-
-    // Firebase users collection
-    const snapshot =
-      await getDocs(
-        collection(db,"users")
-      );
-
-
-    // Get access records
-    const accessLogs =
-      await loadAccessLogs();
-
-
-    // ==========================
-    // Latest access per username
-    // ==========================
-
-    const latestAccess = {};
-
-
-    accessLogs.forEach(log => {
-
-      const username =
-        log.username;
-
-      if(!username){
-        return;
-      }
-
-      if(
-        !latestAccess[username] ||
-        new Date(log.access_time) >
-        new Date(latestAccess[username])
-      ){
-
-        latestAccess[username] =
-          log.access_time;
-
-      }
-
-    });
-
-
-    // ==========================
-    // Convert Firestore users
-    // ==========================
-
-    const registeredUsers = [];
-
-
-    snapshot.forEach(docSnapshot => {
-
-      const data =
-        docSnapshot.data();
-
-
-      // Users without username
-      // are not shown
-      if(!data.username){
-        return;
-      }
-
-
-registeredUsers.push({
-
-  uid: docSnapshot.id,
-
-  username: data.username,
-
-  country: data.country || "Unknown",
-
-  prefecture: data.prefecture || data.region || "Unknown",
-
-  accessTime: latestAccess[data.username] || null
-
-});
-    });
-
-
-    // ==========================
-    // Sort alphabetically
-    // ==========================
-
-    registeredUsers.sort(
-      (a,b) =>
-        a.username.localeCompare(
-          b.username,
-          "ja"
-        )
-    );
-
-
-    // ==========================
-    // Display
-    // ==========================
-
-    usersElement.innerHTML = "";
-
-
-    countElement.textContent =
-      `${registeredUsers.length} registered users`;
-
-
-    status.textContent =
-      `👥 ${registeredUsers.length} Registered Users`;
-
-
-    if(
-      registeredUsers.length === 0
-    ){
-
-      usersElement.innerHTML = `
-
-        <div class="empty">
-          No registered users found.
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    registeredUsers.forEach(user => {
-
-      const element =
-        document.createElement("div");
-
-      element.className =
-        "user";
-
-
-      element.innerHTML = `
-
-        <div class="username">
-          👤 ${escapeHTML(user.username)}
-        </div>
-
-        <div class="info">
-          ${getFlag(user.country)}
-          ${escapeHTML(user.country)}
-        </div>
-
-        <div class="info">
-          📍 ${escapeHTML(user.prefecture)}
-        </div>
-
-        <div class="time">
-          🕒 ${formatTime(user.accessTime)}
-        </div>
-
-<button class="deleteBtn">🚫 Delete User</button>
-const btn = element.querySelector(".deleteBtn");
-
-btn.onclick = () =>
-  deleteUser(user.uid, user.username);
-      `;
-
-
-      usersElement.appendChild(
-        element
-      );
-
-    });
-
-
-  }catch(error){
-
-    console.error(error);
-
-
-    status.textContent =
-      "❌ Failed to load users";
-
-
-    usersElement.innerHTML = `
-
-      <div class="empty">
-        ${escapeHTML(
-          error.message ||
-          "Connection error"
-        )}
-      </div>
-
-    `;
-
-  }
-
-}
-
-
-// ==============================
-// HTML escape
-// ==============================
-
-function escapeHTML(value){
-
-  return String(value)
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
-}
-
-
-// ==============================
-// Auth
-// ==============================
-
-onAuthStateChanged(
-  auth,
-  async(user) => {
-
-    if(!user){
-
-      status.textContent =
-        "🔒 Admin sign in required";
-
-      loginBtn.style.display =
-        "block";
-
-      usersElement.innerHTML = "";
-
-      countElement.textContent = "";
-
-      return;
-
-    }
-
-
-    loginBtn.style.display =
-      "none";
-
-
-    const email =
-      (user.email || "")
-        .toLowerCase()
-        .trim();
-
-
-    // ==========================
-    // Admin check
-    // ==========================
-
-    if(
-      !ADMIN_EMAILS.includes(email)
-    ){
-
-      status.textContent =
-        "❌ Access denied";
-
-      usersElement.innerHTML = `
-
-        <div class="empty">
-
-          This page is available to
-          administrators only.
-
-        </div>
-
-      `;
-
-      countElement.textContent = "";
-
-      return;
-
-    }
-
-
-    // ==========================
-    // Admin → load users
-    // ==========================
 async function deleteUser(uid, username){
-
-  const ok = confirm(
-    `Delete ${username}?\n\nThis removes the user from Rankings.`
-  );
-
+  const ok=confirm(`Delete ${username}?\n\nThis user will be removed from Rankings.`);
   if(!ok) return;
 
   try{
-
     await deleteDoc(doc(db,"users",uid));
-
-    alert("User deleted.");
-
+    alert(`${username} deleted.`);
     await loadUsers();
+  }catch(error){
+    console.error(error);
+    alert("Delete failed.");
+  }
+}
+
+async function loadUsers(){
+  try{
+    status.textContent="Loading registered users...";
+
+    const snapshot=await getDocs(collection(db,"users"));
+    const accessLogs=await loadAccessLogs();
+
+    const latest={};
+
+    accessLogs.forEach(log=>{
+      if(!log.username) return;
+      if(!latest[log.username] || new Date(log.access_time)>new Date(latest[log.username])){
+        latest[log.username]=log.access_time;
+      }
+    });
+
+    const users=[];
+
+    snapshot.forEach(d=>{
+      const data=d.data();
+      if(!data.username) return;
+
+      users.push({
+        uid:d.id,
+        username:data.username,
+        country:data.country || "Unknown",
+        prefecture:data.prefecture || data.region || "Unknown",
+        accessTime:latest[data.username] || null
+      });
+    });
+
+    users.sort((a,b)=>a.username.localeCompare(b.username,"ja"));
+
+    usersElement.innerHTML="";
+    countElement.textContent=`${users.length} registered users`;
+    status.textContent=`👥 ${users.length} Registered Users`;
+
+    if(users.length===0){
+      usersElement.innerHTML='<div class="empty">No registered users found.</div>';
+      return;
+    }
+
+    users.forEach(user=>{
+      const el=document.createElement("div");
+      el.className="user";
+
+      el.innerHTML=`
+        <div class="username">👤 ${escapeHTML(user.username)}</div>
+        <div class="info">${getFlag(user.country)} ${escapeHTML(user.country)}</div>
+        <div class="info">📍 ${escapeHTML(user.prefecture)}</div>
+        <div class="time">🕒 ${formatTime(user.accessTime)}</div>
+        <button class="deleteBtn">🚫 Delete User</button>
+      `;
+
+      el.querySelector(".deleteBtn").onclick=()=>{
+        deleteUser(user.uid,user.username);
+      };
+
+      usersElement.appendChild(el);
+    });
 
   }catch(error){
-
     console.error(error);
-
-    alert("Delete failed.");
-
+    status.textContent="❌ Failed to load users";
+    usersElement.innerHTML=`<div class="empty">${escapeHTML(error.message)}</div>`;
   }
-
 }
-    await loadUsers();
 
+onAuthStateChanged(auth, async(user)=>{
+  if(!user){
+    status.textContent="🔒 Admin sign in required";
+    loginBtn.style.display="block";
+    usersElement.innerHTML="";
+    countElement.textContent="";
+    return;
   }
 
-);
+  loginBtn.style.display="none";
 
+  const email=(user.email||"").toLowerCase().trim();
 
+  if(!ADMIN_EMAILS.includes(email)){
+    status.textContent="❌ Access denied";
+    usersElement.innerHTML='<div class="empty">This page is available to administrators only.</div>';
+    countElement.textContent="";
+    return;
+  }
+
+  await loadUsers();
+});
 </script>
-
 </body>
-
 </html>
