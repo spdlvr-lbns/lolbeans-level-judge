@@ -1,11 +1,21 @@
 <!DOCTYPE html>
+
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+
+>
+
 <title>Country Grade Ranking</title>
 
 <style>
+
 body{
   margin:0;
   background:#0f172a;
@@ -13,34 +23,96 @@ body{
   font-family:Arial,sans-serif;
   padding:20px;
 }
-.container{max-width:800px;margin:auto;}
+
+.container{
+  max-width:800px;
+  margin:auto;
+}
+
 .card{
   background:#1e293b;
   border-radius:14px;
   padding:20px;
 }
+
+h1{
+  margin-top:0;
+}
+
+.subtitle{
+  color:#94a3b8;
+  margin-bottom:20px;
+}
+
 .item{
   background:#334155;
   border-radius:10px;
-  padding:14px;
+  padding:15px;
   margin-top:10px;
+
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
+
 .left{
   display:flex;
   gap:12px;
   align-items:center;
 }
-.rank{width:28px;color:#fbbf24;font-weight:bold;}
-.flag{font-size:22px;}
+
+.rank{
+  width:35px;
+  color:#fbbf24;
+  font-weight:bold;
+}
+
+.flag{
+  font-size:24px;
+}
+
+.country{
+  font-size:17px;
+  font-weight:bold;
+}
+
+.players{
+  color:#94a3b8;
+  font-size:13px;
+  margin-top:4px;
+}
+
 .grade{
+  text-align:right;
+}
+
+.average{
   font-size:22px;
   font-weight:bold;
   color:#86efac;
 }
+
+.numeric{
+  color:#94a3b8;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.loading{
+  text-align:center;
+  padding:30px;
+  color:#94a3b8;
+}
+
+.error{
+  background:#7f1d1d;
+  padding:15px;
+  border-radius:10px;
+  margin-top:10px;
+}
+
 </style>
+
 </head>
 
 <body>
@@ -51,7 +123,17 @@ body{
 
 <h1>🌍 Country Grade Ranking</h1>
 
-<div id="ranking">Loading...</div>
+<div class="subtitle">
+Average grade of players from each country
+</div>
+
+<div id="ranking">
+
+<div class="loading">
+Loading...
+</div>
+
+</div>
 
 </div>
 
@@ -59,24 +141,44 @@ body{
 
 <script type="module">
 
+
 import { db } from "./firebase.js";
+
 import {
+
   collection,
   getDocs
-} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const rankingDiv=document.getElementById("ranking");
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-const gradeValue={
+
+const rankingDiv =
+  document.getElementById("ranking");
+
+
+// ==============================
+// Grade values
+// ==============================
+
+const gradeValue = {
+
   "SS":6,
   "S":5,
   "A":4,
   "B":3,
   "C":2,
   "D":1
+
 };
 
-const flags={
+
+// ==============================
+// Country flags
+// ==============================
+
+const flags = {
+
   "Japan":"🇯🇵",
   "Thailand":"🇹🇭",
   "South Korea":"🇰🇷",
@@ -88,79 +190,363 @@ const flags={
   "Indonesia":"🇮🇩",
   "Philippines":"🇵🇭",
   "Taiwan":"🇹🇼",
-  "China":"🇨🇳"
+  "China":"🇨🇳",
+  "Canada":"🇨🇦",
+  "France":"🇫🇷",
+  "Germany":"🇩🇪",
+  "Italy":"🇮🇹",
+  "Spain":"🇪🇸",
+  "Brazil":"🇧🇷",
+  "Vietnam":"🇻🇳",
+  "India":"🇮🇳"
+
 };
 
-const snap=await getDocs(collection(db,"users"));
 
-const countries={};
+// ==============================
+// Grade calculation
+// ==============================
 
-snap.forEach(docSnap=>{
+function calculateGrade(data){
 
-  const p=docSnap.data();
+  const speedrun =
+    Number(data.speedrun ?? 1200);
 
-  const country=p.country || "Unknown";
+  const wins =
+    Number(data.wins ?? 0);
 
-  const speedrun=Number(p.speedrun ?? 1200);
-  const wins=Number(p.wins ?? 0);
-  const tag=Number(p.tag ?? 0);
-  const community=Number(p.community ?? 0);
+  const tag =
+    Number(data.tag ?? 0);
 
-  const speedPoints=Math.max(
-    0,
-    Math.min(
-      300,
-      Math.round((1200-speedrun)/710*300)
-    )
-  );
+  const community =
+    Number(data.community ?? 0);
 
-  const total=
-    speedPoints+
-    Math.round((wins/10000)*100)+
-    Math.round((tag/2000)*50)+
+
+  const speedPoints =
+    Math.max(
+      0,
+      Math.min(
+        300,
+        Math.round(
+          (1200 - speedrun)
+          / 710
+          * 300
+        )
+      )
+    );
+
+
+  const winPoints =
+    Math.round(
+      (wins / 10000) * 100
+    );
+
+
+  const tagPoints =
+    Math.round(
+      (tag / 2000) * 50
+    );
+
+
+  const total =
+    speedPoints +
+    winPoints +
+    tagPoints +
     community;
 
-  let grade="D";
 
-  if(total>=500) grade="SS";
-  else if(total>=400) grade="S";
-  else if(total>=300) grade="A";
-  else if(total>=200) grade="B";
-  else if(total>=100) grade="C";
+  let grade = "D";
 
-  if(
-    !countries[country] ||
-    gradeValue[grade] > gradeValue[countries[country]]
-  ){
-    countries[country]=grade;
+
+  if(total >= 500){
+
+    grade = "SS";
+
+  }else if(total >= 400){
+
+    grade = "S";
+
+  }else if(total >= 300){
+
+    grade = "A";
+
+  }else if(total >= 200){
+
+    grade = "B";
+
+  }else if(total >= 100){
+
+    grade = "C";
+
   }
 
-});
 
-const ranking=Object.entries(countries)
-  .sort((a,b)=>gradeValue[b[1]]-gradeValue[a[1]]);
+  return {
 
-rankingDiv.innerHTML="";
+    grade:grade,
 
-ranking.forEach(([country,grade],i)=>{
+    value:gradeValue[grade],
 
-  rankingDiv.innerHTML+=`
-    <div class="item">
+    total:total
 
-      <div class="left">
-        <div class="rank">#${i+1}</div>
-        <div class="flag">${flags[country] || "🌍"}</div>
-        <div>${country}</div>
+  };
+
+}
+
+
+// ==============================
+// Load ranking
+// ==============================
+
+async function loadRanking(){
+
+  try{
+
+    const snapshot =
+      await getDocs(
+        collection(db,"users")
+      );
+
+
+    const countries = {};
+
+
+    snapshot.forEach(docSnap => {
+
+      const data =
+        docSnap.data();
+
+
+      const country =
+        data.country || "Unknown";
+
+
+      // Unknownはランキングから除外
+      if(country === "Unknown"){
+        return;
+      }
+
+
+      const result =
+        calculateGrade(data);
+
+
+      if(!countries[country]){
+
+        countries[country] = {
+
+          total:0,
+
+          players:0
+
+        };
+
+      }
+
+
+      countries[country].total +=
+        result.value;
+
+
+      countries[country].players++;
+
+
+    });
+
+
+    // ==========================
+    // Calculate averages
+    // ==========================
+
+    const ranking =
+      Object.entries(countries)
+      .map(([country,data]) => {
+
+        const average =
+          data.total /
+          data.players;
+
+
+        return {
+
+          country:country,
+
+          players:data.players,
+
+          average:average
+
+        };
+
+      });
+
+
+    // ==========================
+    // Sort
+    // ==========================
+
+    ranking.sort((a,b) => {
+
+      if(b.average !== a.average){
+
+        return b.average - a.average;
+
+      }
+
+      // 平均が同じなら人数が多い国を上
+      return b.players - a.players;
+
+    });
+
+
+    // ==========================
+    // No data
+    // ==========================
+
+    if(ranking.length === 0){
+
+      rankingDiv.innerHTML = `
+
+        <div class="loading">
+
+          No country data available.
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    // ==========================
+    // Display
+    // ==========================
+
+    rankingDiv.innerHTML = "";
+
+
+    ranking.forEach((data,index) => {
+
+
+      const average =
+        data.average;
+
+
+      // 平均値から表示Gradeを決定
+      let displayGrade = "D";
+
+
+      if(average >= 5.5){
+
+        displayGrade = "SS";
+
+      }else if(average >= 4.5){
+
+        displayGrade = "S";
+
+      }else if(average >= 3.5){
+
+        displayGrade = "A";
+
+      }else if(average >= 2.5){
+
+        displayGrade = "B";
+
+      }else if(average >= 1.5){
+
+        displayGrade = "C";
+
+      }
+
+
+      const flag =
+        flags[data.country] || "🌍";
+
+
+      const item =
+        document.createElement("div");
+
+
+      item.className =
+        "item";
+
+
+      item.innerHTML = `
+
+        <div class="left">
+
+          <div class="rank">
+            #${index + 1}
+          </div>
+
+          <div class="flag">
+            ${flag}
+          </div>
+
+          <div>
+
+            <div class="country">
+              ${data.country}
+            </div>
+
+            <div class="players">
+              ${data.players} player${data.players === 1 ? "" : "s"}
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="grade">
+
+          <div class="average">
+            ${displayGrade}
+          </div>
+
+          <div class="numeric">
+            ${average.toFixed(2)} / 6.00
+          </div>
+
+        </div>
+
+      `;
+
+
+      rankingDiv.appendChild(item);
+
+
+    });
+
+
+  }catch(error){
+
+    console.error(error);
+
+
+    rankingDiv.innerHTML = `
+
+      <div class="error">
+
+        Failed to load country ranking.<br><br>
+
+        ${error.message}
+
       </div>
 
-      <div class="grade">${grade}</div>
+    `;
 
-    </div>
-  `;
+  }
 
-});
+}
+
+
+loadRanking();
+
 
 </script>
 
 </body>
+
 </html>
