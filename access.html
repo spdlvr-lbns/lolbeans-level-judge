@@ -616,7 +616,31 @@ onAuthStateChanged(
     // ==========================
     // Admin → load users
     // ==========================
+async function deleteUser(uid, username){
 
+  const ok = confirm(
+    `Delete ${username}?\n\nThis removes the user from Rankings.`
+  );
+
+  if(!ok) return;
+
+  try{
+
+    await deleteDoc(doc(db,"users",uid));
+
+    alert("User deleted.");
+
+    await loadUsers();
+
+  }catch(error){
+
+    console.error(error);
+
+    alert("Delete failed.");
+
+  }
+
+}
     await loadUsers();
 
   }
