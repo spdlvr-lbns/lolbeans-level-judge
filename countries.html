@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Country Ranking</title>
+<style>
+body{background:#0f172a;color:#fff;font-family:Arial;padding:20px}
+.card{max-width:700px;margin:auto;background:#1e293b;padding:20px;border-radius:14px}
+.item{display:flex;justify-content:space-between;background:#334155;padding:12px;border-radius:10px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🌍 Country Ranking</h1>
+<div id="ranking"></div>
+</div>
+
+<script>
+const URL="https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-country-ranking";
+
+const flags={
+"Japan":"🇯🇵","Thailand":"🇹🇭","South Korea":"🇰🇷",
+"Singapore":"🇸🇬","Malaysia":"🇲🇾","United States":"🇺🇸",
+"United Kingdom":"🇬🇧","Australia":"🇦🇺","Indonesia":"🇮🇩",
+"Philippines":"🇵🇭","Taiwan":"🇹🇼","China":"🇨🇳"
+};
+
+fetch(URL)
+.then(r=>r.json())
+.then(data=>{
+  const div=document.getElementById("ranking");
+  data.ranking.forEach((c,i)=>{
+    div.innerHTML+=`
+      <div class="item">
+        <div>#${i+1} ${flags[c.country]||"🌍"} ${c.country}</div>
+        <b>${c.visits}</b>
+      </div>`;
+  });
+});
+</script>
+</body>
+</html>
