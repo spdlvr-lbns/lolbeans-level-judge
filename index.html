@@ -75,8 +75,11 @@
 
 <script type="module">
 import { loginWithGoogle, db } from "./firebase.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
+import {
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 const msg = document.getElementById("msg");
 
 const ANALYTICS_URL =
