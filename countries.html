@@ -2,41 +2,165 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Country Ranking</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Country Grade Ranking</title>
+
 <style>
-body{background:#0f172a;color:#fff;font-family:Arial;padding:20px}
-.card{max-width:700px;margin:auto;background:#1e293b;padding:20px;border-radius:14px}
-.item{display:flex;justify-content:space-between;background:#334155;padding:12px;border-radius:10px;margin-top:10px}
+body{
+  margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:20px;
+}
+.container{max-width:800px;margin:auto;}
+.card{
+  background:#1e293b;
+  border-radius:14px;
+  padding:20px;
+}
+.item{
+  background:#334155;
+  border-radius:10px;
+  padding:14px;
+  margin-top:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.left{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.rank{width:28px;color:#fbbf24;font-weight:bold;}
+.flag{font-size:22px;}
+.grade{
+  font-size:22px;
+  font-weight:bold;
+  color:#86efac;
+}
 </style>
 </head>
+
 <body>
+
+<div class="container">
+
 <div class="card">
-<h1>🌍 Country Ranking</h1>
-<div id="ranking"></div>
+
+<h1>🌍 Country Grade Ranking</h1>
+
+<div id="ranking">Loading...</div>
+
 </div>
 
-<script>
-const URL="https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-country-ranking";
+</div>
 
-const flags={
-"Japan":"🇯🇵","Thailand":"🇹🇭","South Korea":"🇰🇷",
-"Singapore":"🇸🇬","Malaysia":"🇲🇾","United States":"🇺🇸",
-"United Kingdom":"🇬🇧","Australia":"🇦🇺","Indonesia":"🇮🇩",
-"Philippines":"🇵🇭","Taiwan":"🇹🇼","China":"🇨🇳"
+<script type="module">
+
+import { db } from "./firebase.js";
+import {
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+const rankingDiv=document.getElementById("ranking");
+
+const gradeValue={
+  "SS":6,
+  "S":5,
+  "A":4,
+  "B":3,
+  "C":2,
+  "D":1
 };
 
-fetch(URL)
-.then(r=>r.json())
-.then(data=>{
-  const div=document.getElementById("ranking");
-  data.ranking.forEach((c,i)=>{
-    div.innerHTML+=`
-      <div class="item">
-        <div>#${i+1} ${flags[c.country]||"🌍"} ${c.country}</div>
-        <b>${c.visits}</b>
-      </div>`;
-  });
+const flags={
+  "Japan":"🇯🇵",
+  "Thailand":"🇹🇭",
+  "South Korea":"🇰🇷",
+  "Singapore":"🇸🇬",
+  "Malaysia":"🇲🇾",
+  "United States":"🇺🇸",
+  "United Kingdom":"🇬🇧",
+  "Australia":"🇦🇺",
+  "Indonesia":"🇮🇩",
+  "Philippines":"🇵🇭",
+  "Taiwan":"🇹🇼",
+  "China":"🇨🇳"
+};
+
+const snap=await getDocs(collection(db,"users"));
+
+const countries={};
+
+snap.forEach(docSnap=>{
+
+  const p=docSnap.data();
+
+  const country=p.country || "Unknown";
+
+  const speedrun=Number(p.speedrun ?? 1200);
+  const wins=Number(p.wins ?? 0);
+  const tag=Number(p.tag ?? 0);
+  const community=Number(p.community ?? 0);
+
+  const speedPoints=Math.max(
+    0,
+    Math.min(
+      300,
+      Math.round((1200-speedrun)/710*300)
+    )
+  );
+
+  const total=
+    speedPoints+
+    Math.round((wins/10000)*100)+
+    Math.round((tag/2000)*50)+
+    community;
+
+  let grade="D";
+
+  if(total>=500) grade="SS";
+  else if(total>=400) grade="S";
+  else if(total>=300) grade="A";
+  else if(total>=200) grade="B";
+  else if(total>=100) grade="C";
+
+  if(
+    !countries[country] ||
+    gradeValue[grade] > gradeValue[countries[country]]
+  ){
+    countries[country]=grade;
+  }
+
 });
+
+const ranking=Object.entries(countries)
+  .sort((a,b)=>gradeValue[b[1]]-gradeValue[a[1]]);
+
+rankingDiv.innerHTML="";
+
+ranking.forEach(([country,grade],i)=>{
+
+  rankingDiv.innerHTML+=`
+    <div class="item">
+
+      <div class="left">
+        <div class="rank">#${i+1}</div>
+        <div class="flag">${flags[country] || "🌍"}</div>
+        <div>${country}</div>
+      </div>
+
+      <div class="grade">${grade}</div>
+
+    </div>
+  `;
+
+});
+
 </script>
+
 </body>
 </html>
