@@ -1,5 +1,9 @@
+<script type="module">
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+const FUNCTION_URL =
+  "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
 
 const ADMIN_EMAILS = [
   "spdlvr83@gmail.com",
@@ -9,6 +13,43 @@ const ADMIN_EMAILS = [
 
 const logsDiv = document.getElementById("logs");
 const status = document.getElementById("status");
+
+async function loadLogs() {
+  try {
+    const token = await auth.currentUser.getIdToken();
+
+    const response = await fetch(FUNCTION_URL, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    logsDiv.innerHTML = "";
+
+    if (!response.ok) {
+      status.textContent = "❌ Failed";
+      return;
+    }
+
+    status.textContent = `${data.logs.length} access logs`;
+
+    data.logs.forEach(log => {
+      logsDiv.innerHTML += `
+        <div class="log">
+          <div class="username">${log.username}</div>
+          <div>🌍 ${log.country ?? "Unknown"} / ${log.prefecture ?? "Unknown"}</div>
+          <div class="time">${new Date(log.access_time).toLocaleString("ja-JP")}</div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    status.textContent = "❌ Access denied";
+    console.error(err);
+  }
+}
 
 onAuthStateChanged(auth, async (user) => {
 
@@ -30,6 +71,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  status.textContent = "Loading logs...";
   loadLogs();
+
 });
+</script>
