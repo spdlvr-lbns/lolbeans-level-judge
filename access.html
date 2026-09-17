@@ -382,26 +382,19 @@ async function loadUsers(){
       }
 
 
-      registeredUsers.push({
+registeredUsers.push({
 
-        username:
-          data.username,
+  uid: docSnapshot.id,
 
-        country:
-          data.country ||
-          "Unknown",
+  username: data.username,
 
-        prefecture:
-          data.prefecture ||
-          data.region ||
-          "Unknown",
+  country: data.country || "Unknown",
 
-        accessTime:
-          latestAccess[data.username] ||
-          null
+  prefecture: data.prefecture || data.region || "Unknown",
 
-      });
+  accessTime: latestAccess[data.username] || null
 
+});
     });
 
 
