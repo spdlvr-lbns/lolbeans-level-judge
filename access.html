@@ -471,6 +471,11 @@ registeredUsers.push({
           🕒 ${formatTime(user.accessTime)}
         </div>
 
+<button class="deleteBtn">🚫 Delete User</button>
+const btn = element.querySelector(".deleteBtn");
+
+btn.onclick = () =>
+  deleteUser(user.uid, user.username);
       `;
 
 
