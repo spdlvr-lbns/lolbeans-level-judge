@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 
 <head>
@@ -7,12 +6,11 @@
 <meta charset="UTF-8">
 
 <meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
-
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
 >
 
-<title>Access Logs</title>
+<title>Registered Users</title>
 
 <style>
 
@@ -57,7 +55,7 @@ h1,h2{
   margin-bottom:15px;
 }
 
-.log{
+.user{
   background:#334155;
   border-radius:10px;
   padding:14px;
@@ -85,10 +83,10 @@ h1,h2{
   padding:20px 0;
 }
 
-hr{
-  margin:25px 0;
-  border:none;
-  border-top:1px solid #334155;
+.count{
+  color:#94a3b8;
+  font-size:14px;
+  margin-bottom:15px;
 }
 
 </style>
@@ -99,7 +97,7 @@ hr{
 
 <div class="container">
 
-<h1>📊 Access Logs</h1>
+<h1>👥 Registered Users</h1>
 
 <div class="card">
 
@@ -111,9 +109,11 @@ Checking admin...
 🔐 Sign in with Google
 </button>
 
-<h2>📝 Recent Access</h2>
+<h2>📋 All Registered Users</h2>
 
-<div id="logs">
+<div id="count" class="count"></div>
+
+<div id="users">
 
 <div class="empty">
 Loading...
@@ -125,11 +125,13 @@ Loading...
 
 </div>
 
+
 <script type="module">
 
 
 import {
   auth,
+  db,
   loginWithGoogle
 } from "./firebase.js";
 
@@ -138,6 +140,13 @@ import {
   onAuthStateChanged
 } from
 "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+
+import {
+  collection,
+  getDocs
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
 const FUNCTION_URL =
@@ -158,8 +167,11 @@ const ADMIN_EMAILS = [
 const status =
 document.getElementById("status");
 
-const logs =
-document.getElementById("logs");
+const usersElement =
+document.getElementById("users");
+
+const countElement =
+document.getElementById("count");
 
 const loginBtn =
 document.getElementById("loginBtn");
@@ -224,50 +236,211 @@ function getFlag(country){
 
 
 // ==============================
-// Load logs
+// Format time
 // ==============================
 
-async function loadLogs(){
+function formatTime(accessTime){
+
+  if(!accessTime){
+    return "No access record";
+  }
+
+  const date =
+    new Date(accessTime);
+
+  if(isNaN(date.getTime())){
+    return "Unknown";
+  }
+
+  return date.toLocaleString(
+    "ja-JP",
+    {
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit",
+      hour:"2-digit",
+      minute:"2-digit",
+      second:"2-digit"
+    }
+  );
+
+}
+
+
+// ==============================
+// Load latest access records
+// ==============================
+
+async function loadAccessLogs(){
 
   try{
 
     const response =
       await fetch(FUNCTION_URL);
 
+    if(!response.ok){
+      throw new Error(
+        "Failed to load access records"
+      );
+    }
 
     const data =
       await response.json();
 
-
-    if(!response.ok){
-
-      throw new Error(
-        data.error ||
-        "Failed to load logs"
-      );
-
-    }
-
-
-    const accessLogs =
+    const logs =
       Array.isArray(data.logs)
         ? data.logs
         : [];
 
+    return logs;
 
-    logs.innerHTML = "";
+  }catch(error){
+
+    console.warn(
+      "Access logs could not be loaded:",
+      error
+    );
+
+    return [];
+
+  }
+
+}
+
+
+// ==============================
+// Load ALL registered users
+// ==============================
+
+async function loadUsers(){
+
+  try{
+
+    status.textContent =
+      "Loading registered users...";
+
+
+    // Firebase users collection
+    const snapshot =
+      await getDocs(
+        collection(db,"users")
+      );
+
+
+    // Get access records
+    const accessLogs =
+      await loadAccessLogs();
+
+
+    // ==========================
+    // Latest access per username
+    // ==========================
+
+    const latestAccess = {};
+
+
+    accessLogs.forEach(log => {
+
+      const username =
+        log.username;
+
+      if(!username){
+        return;
+      }
+
+      if(
+        !latestAccess[username] ||
+        new Date(log.access_time) >
+        new Date(latestAccess[username])
+      ){
+
+        latestAccess[username] =
+          log.access_time;
+
+      }
+
+    });
+
+
+    // ==========================
+    // Convert Firestore users
+    // ==========================
+
+    const registeredUsers = [];
+
+
+    snapshot.forEach(docSnapshot => {
+
+      const data =
+        docSnapshot.data();
+
+
+      // Users without username
+      // are not shown
+      if(!data.username){
+        return;
+      }
+
+
+      registeredUsers.push({
+
+        username:
+          data.username,
+
+        country:
+          data.country ||
+          "Unknown",
+
+        prefecture:
+          data.prefecture ||
+          data.region ||
+          "Unknown",
+
+        accessTime:
+          latestAccess[data.username] ||
+          null
+
+      });
+
+    });
+
+
+    // ==========================
+    // Sort alphabetically
+    // ==========================
+
+    registeredUsers.sort(
+      (a,b) =>
+        a.username.localeCompare(
+          b.username,
+          "ja"
+        )
+    );
+
+
+    // ==========================
+    // Display
+    // ==========================
+
+    usersElement.innerHTML = "";
+
+
+    countElement.textContent =
+      `${registeredUsers.length} registered users`;
 
 
     status.textContent =
-      `📊 ${accessLogs.length} Access Logs`;
+      `👥 ${registeredUsers.length} Registered Users`;
 
 
-    if(accessLogs.length === 0){
+    if(
+      registeredUsers.length === 0
+    ){
 
-      logs.innerHTML = `
+      usersElement.innerHTML = `
 
         <div class="empty">
-          No access logs found.
+          No registered users found.
         </div>
 
       `;
@@ -277,95 +450,39 @@ async function loadLogs(){
     }
 
 
-    // ==========================
-    // Recent Access
-    // ==========================
+    registeredUsers.forEach(user => {
 
-    accessLogs.forEach(log => {
-
-
-      const username =
-        log.username ||
-        "Unknown";
-
-
-      const country =
-        log.country ||
-        "Unknown";
-
-
-      const prefecture =
-        log.prefecture ||
-        log.region ||
-        "Unknown";
-
-
-      const accessTime =
-        log.access_time;
-
-
-      let formattedTime =
-        "Unknown";
-
-
-      if(accessTime){
-
-        const date =
-          new Date(accessTime);
-
-
-        if(!isNaN(date.getTime())){
-
-          formattedTime =
-            date.toLocaleString(
-              "ja-JP",
-              {
-                year:"numeric",
-                month:"2-digit",
-                day:"2-digit",
-                hour:"2-digit",
-                minute:"2-digit",
-                second:"2-digit"
-              }
-            );
-
-        }
-
-      }
-
-
-      const logElement =
+      const element =
         document.createElement("div");
 
+      element.className =
+        "user";
 
-      logElement.className =
-        "log";
 
-
-      logElement.innerHTML = `
+      element.innerHTML = `
 
         <div class="username">
-          👤 ${escapeHTML(username)}
+          👤 ${escapeHTML(user.username)}
         </div>
 
         <div class="info">
-          ${getFlag(country)}
-          ${escapeHTML(country)}
+          ${getFlag(user.country)}
+          ${escapeHTML(user.country)}
         </div>
 
         <div class="info">
-          📍 ${escapeHTML(prefecture)}
+          📍 ${escapeHTML(user.prefecture)}
         </div>
 
         <div class="time">
-          🕒 ${formattedTime}
+          🕒 ${formatTime(user.accessTime)}
         </div>
 
       `;
 
 
-      logs.appendChild(
-        logElement
+      usersElement.appendChild(
+        element
       );
 
     });
@@ -377,18 +494,16 @@ async function loadLogs(){
 
 
     status.textContent =
-      "❌ Failed to load logs";
+      "❌ Failed to load users";
 
 
-    logs.innerHTML = `
+    usersElement.innerHTML = `
 
       <div class="empty">
-
         ${escapeHTML(
           error.message ||
           "Connection error"
         )}
-
       </div>
 
     `;
@@ -406,15 +521,30 @@ function escapeHTML(value){
 
   return String(value)
 
-    .replaceAll("&","&amp;")
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
 
-    .replaceAll("<","&lt;")
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
 
-    .replaceAll(">","&gt;")
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
 
-    .replaceAll('"',"&quot;")
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
 
-    .replaceAll("'","&#039;");
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
@@ -427,7 +557,6 @@ onAuthStateChanged(
   auth,
   async(user) => {
 
-
     if(!user){
 
       status.textContent =
@@ -436,7 +565,9 @@ onAuthStateChanged(
       loginBtn.style.display =
         "block";
 
-      logs.innerHTML = "";
+      usersElement.innerHTML = "";
+
+      countElement.textContent = "";
 
       return;
 
@@ -453,6 +584,10 @@ onAuthStateChanged(
         .trim();
 
 
+    // ==========================
+    // Admin check
+    // ==========================
+
     if(
       !ADMIN_EMAILS.includes(email)
     ){
@@ -460,7 +595,7 @@ onAuthStateChanged(
       status.textContent =
         "❌ Access denied";
 
-      logs.innerHTML = `
+      usersElement.innerHTML = `
 
         <div class="empty">
 
@@ -471,16 +606,18 @@ onAuthStateChanged(
 
       `;
 
+      countElement.textContent = "";
+
       return;
 
     }
 
 
-    status.textContent =
-      "Loading logs...";
+    // ==========================
+    // Admin → load users
+    // ==========================
 
-
-    await loadLogs();
+    await loadUsers();
 
   }
 
