@@ -1,80 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Access Logs</title>
+
+<style>
+body{
+  background:#0f172a;
+  color:white;
+  font-family:Arial,sans-serif;
+  margin:0;
+  padding:20px;
+}
+.container{max-width:900px;margin:auto;}
+.card{background:#1e293b;padding:20px;border-radius:12px;}
+.log{
+  background:#334155;
+  padding:12px;
+  border-radius:8px;
+  margin-top:10px;
+}
+.username{font-weight:bold;font-size:18px;}
+.time{color:#cbd5e1;}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>📊 Access Logs</h1>
+
+  <div class="card">
+    <p id="status">Checking admin...</p>
+    <div id="logs"></div>
+  </div>
+</div>
+
 <script type="module">
 import { auth } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
 const FUNCTION_URL =
-  "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
+"https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
 
-const ADMIN_EMAILS = [
-  "spdlvr83@gmail.com",
-  "grgt1462@gmail.com",
-  "shinobilolbean@gmail.com"
+const ADMIN_EMAILS=[
+ "spdlvr83@gmail.com",
+ "grgt1462@gmail.com",
+ "shinobilolbean@gmail.com"
 ];
 
-const logsDiv = document.getElementById("logs");
-const status = document.getElementById("status");
+const logs=document.getElementById("logs");
+const status=document.getElementById("status");
 
-async function loadLogs() {
-  try {
-    const token = await auth.currentUser.getIdToken();
+async function loadLogs(){
 
-    const response = await fetch(FUNCTION_URL, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+ const token=await auth.currentUser.getIdToken();
 
-    const data = await response.json();
-
-    logsDiv.innerHTML = "";
-
-    if (!response.ok) {
-      status.textContent = "❌ Access denied";
-      return;
-    }
-
-    status.textContent = `📊 ${data.logs.length} Access Logs`;
-
-    data.logs.forEach(log => {
-      const country = log.country || "Unknown";
-      const prefecture = log.prefecture || "Unknown";
-
-      logsDiv.innerHTML += `
-        <div class="log">
-          <div class="username">👤 ${log.username}</div>
-          <div>🌍 ${country} / ${prefecture}</div>
-          <div class="time">🕒 ${new Date(log.access_time).toLocaleString("ja-JP")}</div>
-        </div>
-      `;
-    });
-
-  } catch (err) {
-    status.textContent = "❌ Access denied";
-    logsDiv.innerHTML = "";
-    console.error(err);
+ const res=await fetch(FUNCTION_URL,{
+  headers:{
+   Authorization:`Bearer ${token}`
   }
+ });
+
+ const data=await res.json();
+
+ logs.innerHTML="";
+
+ if(!res.ok){
+   status.textContent="❌ Access denied";
+   return;
+ }
+
+ status.textContent=`${data.logs.length} logs`;
+
+ data.logs.forEach(l=>{
+
+  logs.innerHTML+=`
+  <div class="log">
+    <div class="username">👤 ${l.username}</div>
+    <div>🌍 ${l.country ?? "Unknown"} / ${l.prefecture ?? "Unknown"}</div>
+    <div class="time">🕒 ${new Date(l.access_time).toLocaleString("ja-JP")}</div>
+  </div>`;
+
+ });
+
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    status.textContent = "🔒 Please sign in with Google";
-    logsDiv.innerHTML = "";
-    return;
-  }
+onAuthStateChanged(auth,async(user)=>{
 
-  const email = (user.email || "").toLowerCase().trim();
+ if(!user){
+   status.textContent="🔒 Sign in required";
+   return;
+ }
 
-  const isAdmin = ADMIN_EMAILS
-    .map(e => e.toLowerCase().trim())
-    .includes(email);
+ const ok=ADMIN_EMAILS.includes(
+   user.email.toLowerCase()
+ );
 
-  if (!isAdmin) {
-    status.textContent = "❌ Access denied";
-    logsDiv.innerHTML = "";
-    return;
-  }
+ if(!ok){
+   status.textContent="❌ Access denied";
+   return;
+ }
 
-  status.textContent = "Loading logs...";
-  await loadLogs();
+ loadLogs();
+
 });
 </script>
+</body>
+</html>
