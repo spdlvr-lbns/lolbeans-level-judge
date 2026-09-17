@@ -178,7 +178,31 @@ async function loadLogs(){
 
     status.textContent =
       `📊 ${data.logs.length} Access Logs`;
+// ===== Country Ranking =====
+const countries = {};
 
+data.logs.forEach(log => {
+  const country = log.country || "Unknown";
+  countries[country] = (countries[country] || 0) + 1;
+});
+
+const ranking = Object.entries(countries)
+  .sort((a, b) => b[1] - a[1]);
+
+countryRanking.innerHTML = "";
+
+ranking.forEach(([country, count], index) => {
+  countryRanking.innerHTML += `
+    <div class="rank-item">
+      <div class="rank-left">
+        <div class="rank-num">#${index + 1}</div>
+        <div>🌍 ${country}</div>
+      </div>
+      <div class="count">${count}</div>
+    </div>
+  `;
+});
+// ===== End Country Ranking =====
     data.logs.forEach(log=>{
 
       logs.innerHTML += `
