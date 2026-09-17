@@ -40,9 +40,10 @@ body{
 </div>
 
 <script type="module">
-import { auth } from "./firebase.js";
+import { auth, loginWithGoogle } from "./firebase.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
+const loginBtn = document.getElementById("loginBtn");
 const FUNCTION_URL =
 "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
 
