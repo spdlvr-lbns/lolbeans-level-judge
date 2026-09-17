@@ -1,3 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LOLBeans Level Judge</title>
+
+  <style>
+    body{
+      font-family:Arial,sans-serif;
+      background:#f2f2f2;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      margin:0;
+    }
+
+    .box{
+      background:white;
+      padding:30px;
+      border-radius:15px;
+      width:340px;
+      text-align:center;
+      box-shadow:0 5px 20px rgba(0,0,0,.15);
+    }
+
+    h1{margin-top:0;}
+
+    button{
+      width:100%;
+      padding:12px;
+      margin-top:10px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    #googleLogin{
+      background:#4285F4;
+      color:white;
+    }
+
+    #rankingBtn{
+      background:#ececec;
+    }
+
+    #msg{
+      margin-top:15px;
+      color:#555;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>🏁 LOLBeans</h1>
+
+  <p>Googleアカウントでログイン</p>
+
+  <button id="googleLogin">
+    🔵 Sign in with Google
+  </button>
+
+  <button id="rankingBtn">
+    🏆 Overall Ranking
+  </button>
+
+  <p id="msg"></p>
+
+</div>
+
 <script type="module">
 import { loginWithGoogle, db } from "./firebase.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
@@ -5,79 +80,78 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-
 const msg = document.getElementById("msg");
 
 const ANALYTICS_URL =
-  "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/log-access";
-  console.log("INDEX VERSION 2");
+"https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/log-access";
 
-// 国・都道府県を取得
-async function getRegion() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
+async function getRegion(){
+  try{
+    const r = await fetch("https://ipapi.co/json/");
+    const d = await r.json();
 
-    return {
-      country: data.country_name || "Unknown",
-      prefecture: data.region || "Unknown"
+    return{
+      country:d.country_name || "Unknown",
+      prefecture:d.region || "Unknown"
     };
-  } catch (e) {
-    console.error("Region lookup failed:", e);
-    return {
-      country: "Unknown",
-      prefecture: "Unknown"
+
+  }catch{
+
+    return{
+      country:"Unknown",
+      prefecture:"Unknown"
     };
+
   }
 }
 
-document.getElementById("googleLogin").onclick = async () => {
-  msg.textContent = "Googleログイン中...";
+document.getElementById("rankingBtn").onclick=()=>{
+  location.href="ranking.html";
+};
 
-  try {
-    const result = await loginWithGoogle();
-    const user = result.user;
+document.getElementById("googleLogin").onclick=async()=>{
 
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
+  msg.textContent="Googleログイン中...";
 
-    if (userSnap.exists() && userSnap.data().username) {
+  try{
 
-      const username = userSnap.data().username;
+    const result=await loginWithGoogle();
+    const user=result.user;
 
-      // 地域取得
-      const region = await getRegion();
+    const userRef=doc(db,"users",user.uid);
+    const snap=await getDoc(userRef);
 
-      console.log("Sending analytics", {
-        username,
-        country: region.country,
-        prefecture: region.prefecture
+    if(snap.exists() && snap.data().username){
+
+      const username=snap.data().username;
+      const region=await getRegion();
+
+      await fetch(ANALYTICS_URL,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          username,
+          country:region.country,
+          prefecture:region.prefecture
+        })
       });
 
-      // Supabaseへ送信
-      try {
-        await fetch(ANALYTICS_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            username: username,
-            country: region.country,
-            prefecture: region.prefecture
-          })
-        });
-      } catch (analyticsError) {
-        console.error("Analytics error:", analyticsError);
-      }
+      location.href="home.html";
 
-      location.href = "home.html";
+    }else{
 
-    } else {
-
-      location.href = "username.html";
+      location.href="username.html";
 
     }
 
-  } catch (error) {
-    console.error(error);
-    msg.textContent = "Login failed: " + error.message;
+  }catch(err){
+
+    console.error(err);
+    msg.textContent="Login failed";
+
   }
+
 };
 </script>
+
+</body>
+</html>
