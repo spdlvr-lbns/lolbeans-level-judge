@@ -29,37 +29,40 @@ async function loadLogs() {
     logsDiv.innerHTML = "";
 
     if (!response.ok) {
-      status.textContent = "❌ Failed";
+      status.textContent = "❌ Access denied";
       return;
     }
 
-    status.textContent = `${data.logs.length} access logs`;
+    status.textContent = `📊 ${data.logs.length} Access Logs`;
 
     data.logs.forEach(log => {
+      const country = log.country || "Unknown";
+      const prefecture = log.prefecture || "Unknown";
+
       logsDiv.innerHTML += `
         <div class="log">
-          <div class="username">${log.username}</div>
-          <div>🌍 ${log.country ?? "Unknown"} / ${log.prefecture ?? "Unknown"}</div>
-          <div class="time">${new Date(log.access_time).toLocaleString("ja-JP")}</div>
+          <div class="username">👤 ${log.username}</div>
+          <div>🌍 ${country} / ${prefecture}</div>
+          <div class="time">🕒 ${new Date(log.access_time).toLocaleString("ja-JP")}</div>
         </div>
       `;
     });
 
   } catch (err) {
     status.textContent = "❌ Access denied";
+    logsDiv.innerHTML = "";
     console.error(err);
   }
 }
 
 onAuthStateChanged(auth, async (user) => {
-
   if (!user) {
-    status.textContent = "🔒 Please sign in.";
+    status.textContent = "🔒 Please sign in with Google";
     logsDiv.innerHTML = "";
     return;
   }
 
-  const email = user.email.toLowerCase().trim();
+  const email = (user.email || "").toLowerCase().trim();
 
   const isAdmin = ADMIN_EMAILS
     .map(e => e.toLowerCase().trim())
@@ -71,7 +74,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  loadLogs();
-
+  status.textContent = "Loading logs...";
+  await loadLogs();
 });
 </script>
