@@ -89,6 +89,11 @@ button:hover{
 #msg{
   margin-top:12px;
 }
+
+.loading{
+  color:#94a3b8;
+  font-size:14px;
+}
 </style>
 </head>
 
@@ -101,6 +106,7 @@ button:hover{
   <h2 id="grade">D</h2>
   <h3 id="total">0 / 550</h3>
 </div>
+
 
 <div class="card">
 
@@ -121,6 +127,7 @@ button:hover{
 
 </div>
 
+
 <div class="card">
 
   <div class="nav">
@@ -130,6 +137,7 @@ button:hover{
   </div>
 
 </div>
+
 
 <!-- SPEEDRUN -->
 
@@ -238,6 +246,10 @@ button:hover{
   <div class="rank-label">Sub Rank</div>
   <div class="rank" id="communityRank">Basic</div>
 
+  <p id="communityLoading" class="loading">
+    Calculating Community rank...
+  </p>
+
 </div>
 
 
@@ -265,13 +277,20 @@ import {
 import {
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  collection,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
-const speed = document.getElementById("speed");
-const wins = document.getElementById("wins");
-const tag = document.getElementById("tag");
+const speed =
+  document.getElementById("speed");
+
+const wins =
+  document.getElementById("wins");
+
+const tag =
+  document.getElementById("tag");
 
 const usernameDisplay =
   document.getElementById("username");
@@ -288,12 +307,17 @@ const saveBtn =
 const msg =
   document.getElementById("msg");
 
+const communityLoading =
+  document.getElementById("communityLoading");
+
 
 let currentUID = "";
 let currentUsername = "";
 
 let communityPoints = 0;
+
 let communityParticipation = 0;
+
 let communityAverageRank = 0;
 
 
@@ -414,11 +438,11 @@ function getTagRank(value){
    Community Value =
    Average Position × Participation
 
-   Master    1 - 3
-   Platinum  >3 - 6
-   Gold      >6 - 9
-   Silver    >9 - 15
-   Bronze    >15 - 30
+   Master    <=3
+   Platinum  >3 - <=6
+   Gold      >6 - <=9
+   Silver    >9 - <=15
+   Bronze    >15 - <=30
    Basic     >30
 */
 
@@ -446,6 +470,305 @@ function getCommunityRank(value){
 
 
 /* =========================
+   COMMUNITY CALCULATION
+========================= */
+
+async function calculateCommunityRank(){
+
+  if(!currentUID){
+
+    return {
+      participation: 0,
+      averageRank: 0,
+      value: 0
+    };
+
+  }
+
+
+  try{
+
+    /*
+       Get every event
+    */
+
+    const eventsSnapshot =
+      await getDocs(
+        collection(db, "events")
+      );
+
+
+    let participatedEvents = 0;
+
+    let totalRank = 0;
+
+
+    /*
+       Check every event
+    */
+
+    const eventResults =
+      await Promise.all(
+
+        eventsSnapshot.docs.map(
+          async(eventDoc) => {
+
+            try{
+
+              const timesSnapshot =
+                await getDocs(
+                  collection(
+                    db,
+                    "community",
+                    eventDoc.id,
+                    "times"
+                  )
+                );
+
+
+              const approvedPlayers = [];
+
+
+              /*
+                 Only approved submissions
+              */
+
+              timesSnapshot.forEach(
+                timeDoc => {
+
+                  const data =
+                    timeDoc.data();
+
+
+                  if(
+                    data.status === "approved"
+                  ){
+
+                    approvedPlayers.push({
+
+                      uid: timeDoc.id,
+
+                      time:
+                        Number(data.time)
+
+                    });
+
+                  }
+
+                }
+              );
+
+
+              /*
+                 No approved players
+              */
+
+              if(
+                approvedPlayers.length === 0
+              ){
+
+                return null;
+
+              }
+
+
+              /*
+                 Same ranking system
+                 as community.html
+              */
+
+              approvedPlayers.sort(
+                (a,b) =>
+                  a.time - b.time
+              );
+
+
+              /*
+                 Find current player
+              */
+
+              const myIndex =
+                approvedPlayers.findIndex(
+                  player =>
+                    player.uid === currentUID
+                );
+
+
+              if(myIndex === -1){
+
+                return null;
+
+              }
+
+
+              /*
+                 Position starts at 1
+              */
+
+              return myIndex + 1;
+
+
+            }catch(error){
+
+              console.error(
+                "Failed to read event:",
+                eventDoc.id,
+                error
+              );
+
+              return null;
+
+            }
+
+          }
+        )
+
+      );
+
+
+    /*
+       Add all participated events
+    */
+
+    eventResults.forEach(
+      position => {
+
+        if(
+          position !== null
+        ){
+
+          participatedEvents++;
+
+          totalRank += position;
+
+        }
+
+      }
+    );
+
+
+    /*
+       Average position
+    */
+
+    const averageRank =
+      participatedEvents > 0
+        ? totalRank / participatedEvents
+        : 0;
+
+
+    /*
+       Community Value
+
+       average × participation
+
+       Mathematically this is
+       the same as totalRank.
+    */
+
+    const communityValue =
+      averageRank *
+      participatedEvents;
+
+
+    return {
+
+      participation:
+        participatedEvents,
+
+      averageRank:
+        averageRank,
+
+      value:
+        communityValue
+
+    };
+
+
+  }catch(error){
+
+    console.error(
+      "Community calculation failed:",
+      error
+    );
+
+
+    return {
+
+      participation: 0,
+
+      averageRank: 0,
+
+      value: 0
+
+    };
+
+  }
+
+}
+
+
+/* =========================
+   UPDATE COMMUNITY DISPLAY
+========================= */
+
+function updateCommunityDisplay(
+  communityData
+){
+
+  communityParticipation =
+    communityData.participation;
+
+  communityAverageRank =
+    communityData.averageRank;
+
+
+  const communityValue =
+    communityData.value;
+
+
+  document.getElementById(
+    "community"
+  ).textContent =
+    communityPoints + " pt";
+
+
+  document.getElementById(
+    "communityParticipation"
+  ).textContent =
+    communityParticipation;
+
+
+  document.getElementById(
+    "communityAverageRank"
+  ).textContent =
+    communityParticipation > 0
+      ? communityAverageRank.toFixed(2)
+      : "0";
+
+
+  document.getElementById(
+    "communityValue"
+  ).textContent =
+    communityValue;
+
+
+  document.getElementById(
+    "communityRank"
+  ).textContent =
+    communityParticipation > 0
+      ? getCommunityRank(
+          communityValue
+        )
+      : "Basic";
+
+
+  communityLoading.textContent =
+    "✅ Community rank calculated";
+}
+
+
+/* =========================
    CALCULATE SCORE
 ========================= */
 
@@ -463,17 +786,18 @@ function calc(){
 
   /* SPEED POINTS */
 
-  const speedPoints = Math.max(
-    0,
-    Math.min(
-      300,
-      Math.round(
-        (1200 - speedValue)
-        / 710
-        * 300
+  const speedPoints =
+    Math.max(
+      0,
+      Math.min(
+        300,
+        Math.round(
+          (1200 - speedValue)
+          / 710
+          * 300
+        )
       )
-    )
-  );
+    );
 
 
   /* BATTLE POINTS */
@@ -511,27 +835,45 @@ function calc(){
 
   /* DISPLAY VALUES */
 
-  document.getElementById("speedValue").textContent =
+  document.getElementById(
+    "speedValue"
+  ).textContent =
     speedValue;
 
-  document.getElementById("winsValue").textContent =
+
+  document.getElementById(
+    "winsValue"
+  ).textContent =
     winsValue;
 
-  document.getElementById("tagValue").textContent =
+
+  document.getElementById(
+    "tagValue"
+  ).textContent =
     tagValue;
 
 
-  document.getElementById("speedPts").textContent =
+  document.getElementById(
+    "speedPts"
+  ).textContent =
     speedPoints + " / 300";
 
-  document.getElementById("winPts").textContent =
+
+  document.getElementById(
+    "winPts"
+  ).textContent =
     winPoints + " / 100";
 
-  document.getElementById("tagPts").textContent =
+
+  document.getElementById(
+    "tagPts"
+  ).textContent =
     tagPoints + " / 50";
 
 
-  document.getElementById("total").textContent =
+  document.getElementById(
+    "total"
+  ).textContent =
     total + " / 550";
 
 
@@ -540,6 +882,7 @@ function calc(){
   ========================= */
 
   let grade = "D";
+
 
   if(total >= 500)
     grade = "SS";
@@ -557,7 +900,9 @@ function calc(){
     grade = "C";
 
 
-  document.getElementById("grade").textContent =
+  document.getElementById(
+    "grade"
+  ).textContent =
     grade;
 
 
@@ -565,21 +910,37 @@ function calc(){
      SUB RANK DISPLAY
   ========================= */
 
-  document.getElementById("speedRank").textContent =
+  document.getElementById(
+    "speedRank"
+  ).textContent =
     getSpeedRank(speedValue);
 
-  document.getElementById("battleRank").textContent =
+
+  document.getElementById(
+    "battleRank"
+  ).textContent =
     getBattleRank(winsValue);
 
-  document.getElementById("tagRank").textContent =
+
+  document.getElementById(
+    "tagRank"
+  ).textContent =
     getTagRank(tagValue);
 
-  document.getElementById("communityValue").textContent =
+
+  document.getElementById(
+    "communityValue"
+  ).textContent =
     communityValue;
 
-  document.getElementById("communityRank").textContent =
+
+  document.getElementById(
+    "communityRank"
+  ).textContent =
     communityParticipation > 0
-      ? getCommunityRank(communityValue)
+      ? getCommunityRank(
+          communityValue
+        )
       : "Basic";
 
 
@@ -588,20 +949,31 @@ function calc(){
   ).textContent =
     communityParticipation;
 
+
   document.getElementById(
     "communityAverageRank"
   ).textContent =
-    communityAverageRank;
+    communityParticipation > 0
+      ? communityAverageRank.toFixed(2)
+      : "0";
 
 
   return {
+
     speedPoints,
+
     winPoints,
+
     tagPoints,
+
     total,
+
     grade,
+
     communityValue
+
   };
+
 }
 
 
@@ -610,7 +982,9 @@ function calc(){
 ========================= */
 
 speed.oninput = calc;
+
 wins.oninput = calc;
+
 tag.oninput = calc;
 
 
@@ -618,83 +992,138 @@ tag.oninput = calc;
    LOGIN
 ========================= */
 
-onAuthStateChanged(auth, async(user) => {
+onAuthStateChanged(
+  auth,
+  async(user) => {
 
-  if(!user){
+    if(!user){
 
-    location.href = "index.html";
+      location.href =
+        "index.html";
 
-    return;
-  }
-
-
-  currentUID = user.uid;
-
-
-  const userRef =
-    doc(db, "users", user.uid);
-
-
-  const snap =
-    await getDoc(userRef);
-
-
-  if(snap.exists()){
-
-    const data = snap.data();
-
-
-    /* USERNAME */
-
-    if(data.username){
-
-      currentUsername =
-        data.username;
-
-      usernameInput.value =
-        data.username;
-
-      usernameDisplay.textContent =
-        data.username;
+      return;
 
     }
 
 
-    /* STATS */
-
-    speed.value =
-      data.speedrun ?? 1200;
-
-    wins.value =
-      data.wins ?? 0;
-
-    tag.value =
-      data.tag ?? 0;
+    currentUID =
+      user.uid;
 
 
-    /* COMMUNITY */
-
-    communityPoints =
-      data.community ?? 0;
-
-    communityParticipation =
-      data.communityParticipation ?? 0;
-
-    communityAverageRank =
-      data.communityAverageRank ?? 0;
+    const userRef =
+      doc(
+        db,
+        "users",
+        user.uid
+      );
 
 
-    document.getElementById(
-      "community"
-    ).textContent =
-      communityPoints + " pt";
+    try{
+
+      const snap =
+        await getDoc(
+          userRef
+        );
+
+
+      if(snap.exists()){
+
+        const data =
+          snap.data();
+
+
+        /* USERNAME */
+
+        if(data.username){
+
+          currentUsername =
+            data.username;
+
+          usernameInput.value =
+            data.username;
+
+          usernameDisplay.textContent =
+            data.username;
+
+        }
+
+
+        /* STATS */
+
+        speed.value =
+          data.speedrun ?? 1200;
+
+        wins.value =
+          data.wins ?? 0;
+
+        tag.value =
+          data.tag ?? 0;
+
+
+        /* COMMUNITY POINTS */
+
+        communityPoints =
+          data.community ?? 0;
+
+
+        /*
+           We DO NOT trust old
+           communityParticipation /
+           communityAverageRank.
+
+           They are recalculated
+           from the event data below.
+        */
+
+
+        document.getElementById(
+          "community"
+        ).textContent =
+          communityPoints + " pt";
+
+      }
+
+
+      /*
+         First calculate normal
+         stats immediately.
+      */
+
+      calc();
+
+
+      /*
+         Then automatically calculate
+         Community participation/ranks.
+      */
+
+      communityLoading.textContent =
+        "⏳ Calculating Community rank...";
+
+
+      const communityData =
+        await calculateCommunityRank();
+
+
+      updateCommunityDisplay(
+        communityData
+      );
+
+
+      calc();
+
+
+    }catch(error){
+
+      console.error(error);
+
+      communityLoading.textContent =
+        "❌ Failed to calculate Community rank.";
+
+    }
 
   }
-
-
-  calc();
-
-});
+);
 
 
 /* =========================
@@ -709,6 +1138,7 @@ saveBtn.onclick = async() => {
       "❌ Please login first.";
 
     return;
+
   }
 
 
@@ -722,6 +1152,7 @@ saveBtn.onclick = async() => {
       "❌ Please enter a username.";
 
     return;
+
   }
 
 
@@ -731,6 +1162,7 @@ saveBtn.onclick = async() => {
       "❌ Username must be at least 3 characters.";
 
     return;
+
   }
 
 
@@ -748,7 +1180,13 @@ saveBtn.onclick = async() => {
   try{
 
     await setDoc(
-      doc(db, "users", currentUID),
+
+      doc(
+        db,
+        "users",
+        currentUID
+      ),
+
       {
 
         username:
@@ -779,9 +1217,11 @@ saveBtn.onclick = async() => {
           score.grade
 
       },
+
       {
         merge:true
       }
+
     );
 
 
