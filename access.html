@@ -1,144 +1,200 @@
 <!DOCTYPE html>
+
 <html lang="ja">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Access Logs</title>
 
-  <style>
-    body{
-      margin:0;
-      background:#0f172a;
-      color:white;
-      font-family:Arial,sans-serif;
-      padding:20px;
-    }
+<meta charset="UTF-8">
 
-    .container{max-width:900px;margin:auto;}
-    .card{
-      background:#1e293b;
-      border-radius:14px;
-      padding:20px;
-    }
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
 
-    h1,h2{margin-top:0;}
+>
 
-    #status{
-      color:#cbd5e1;
-      margin-bottom:15px;
-    }
+<title>Access Logs</title>
 
-    #loginBtn{
-      width:100%;
-      padding:12px;
-      border:none;
-      border-radius:10px;
-      background:#4285F4;
-      color:white;
-      font-size:16px;
-      cursor:pointer;
-      display:none;
-      margin-bottom:15px;
-    }
+<style>
 
-    .rank-item,.log{
-      background:#334155;
-      border-radius:10px;
-      padding:14px;
-      margin-top:10px;
-    }
+body{
+  margin:0;
+  background:#0f172a;
+  color:white;
+  font-family:Arial,sans-serif;
+  padding:20px;
+}
 
-    .rank-item{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
+.container{
+  max-width:900px;
+  margin:auto;
+}
 
-    .rank-left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
+.card{
+  background:#1e293b;
+  border-radius:14px;
+  padding:20px;
+}
 
-    .rank-num{
-      color:#fbbf24;
-      font-weight:bold;
-      width:32px;
-    }
+h1,h2{
+  margin-top:0;
+}
 
-    .flag{font-size:22px;}
-    .country-name{font-weight:bold;}
-    .count{color:#86efac;font-weight:bold;}
+#status{
+  color:#cbd5e1;
+  margin-bottom:15px;
+}
 
-    .username{
-      font-size:18px;
-      font-weight:bold;
-    }
+#loginBtn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:#4285F4;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  display:none;
+  margin-bottom:15px;
+}
 
-    .region{
-      margin-top:6px;
-      color:#bfdbfe;
-    }
+.log{
+  background:#334155;
+  border-radius:10px;
+  padding:14px;
+  margin-top:10px;
+}
 
-    .time{
-      margin-top:6px;
-      color:#cbd5e1;
-      font-size:14px;
-    }
-  </style>
+.username{
+  font-size:18px;
+  font-weight:bold;
+}
+
+.info{
+  margin-top:6px;
+  color:#bfdbfe;
+}
+
+.time{
+  margin-top:6px;
+  color:#cbd5e1;
+  font-size:14px;
+}
+
+.empty{
+  color:#94a3b8;
+  padding:20px 0;
+}
+
+hr{
+  margin:25px 0;
+  border:none;
+  border-top:1px solid #334155;
+}
+
+</style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-  <h1>📊 Access Logs</h1>
+<h1>📊 Access Logs</h1>
 
-  <div class="card">
+<div class="card">
 
-    <p id="status">Checking admin...</p>
+<p id="status">
+Checking admin...
+</p>
 
-    <button id="loginBtn">
-      🔐 Sign in with Google
-    </button>
+<button id="loginBtn">
+🔐 Sign in with Google
+</button>
 
-    <h2>🌍 Country Ranking</h2>
-    <div id="countryRanking"></div>
+<h2>📝 Recent Access</h2>
 
-    <hr style="margin:20px 0;border-color:#334155;">
+<div id="logs">
 
-    <h2>📝 Recent Access</h2>
-    <div id="logs"></div>
+<div class="empty">
+Loading...
+</div>
 
-  </div>
+</div>
+
+</div>
 
 </div>
 
 <script type="module">
 
-import { auth, loginWithGoogle } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+import {
+  auth,
+  loginWithGoogle
+} from "./firebase.js";
+
+
+import {
+  onAuthStateChanged
+} from
+"https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
 
 const FUNCTION_URL =
 "https://afhuasrcsjnjhungznnu.supabase.co/functions/v1/get-access-logs";
 
+
 const ADMIN_EMAILS = [
+
   "spdlvr83@gmail.com",
+
   "grgt1462@gmail.com",
+
   "shinobilolbean@gmail.com"
+
 ];
 
-const status = document.getElementById("status");
-const logs = document.getElementById("logs");
-const countryRanking = document.getElementById("countryRanking");
-const loginBtn = document.getElementById("loginBtn");
+
+const status =
+document.getElementById("status");
+
+const logs =
+document.getElementById("logs");
+
+const loginBtn =
+document.getElementById("loginBtn");
+
+
+// ==============================
+// Google Login
+// ==============================
 
 loginBtn.onclick = async () => {
-  await loginWithGoogle();
+
+  try{
+
+    await loginWithGoogle();
+
+  }catch(error){
+
+    console.error(error);
+
+    status.textContent =
+      "❌ Login failed";
+
+  }
+
 };
 
+
+// ==============================
+// Flag
+// ==============================
+
 function getFlag(country){
+
   const flags = {
+
     "Japan":"🇯🇵",
     "Thailand":"🇹🇭",
     "South Korea":"🇰🇷",
@@ -150,103 +206,289 @@ function getFlag(country){
     "Indonesia":"🇮🇩",
     "Philippines":"🇵🇭",
     "Taiwan":"🇹🇼",
-    "China":"🇨🇳"
+    "China":"🇨🇳",
+    "Canada":"🇨🇦",
+    "France":"🇫🇷",
+    "Germany":"🇩🇪",
+    "Italy":"🇮🇹",
+    "Spain":"🇪🇸",
+    "Brazil":"🇧🇷",
+    "Vietnam":"🇻🇳",
+    "India":"🇮🇳"
+
   };
+
   return flags[country] || "🌍";
+
 }
+
+
+// ==============================
+// Load logs
+// ==============================
 
 async function loadLogs(){
 
   try{
 
-    const res = await fetch(FUNCTION_URL);
-    const data = await res.json();
+    const response =
+      await fetch(FUNCTION_URL);
 
-    logs.innerHTML = "";
-    countryRanking.innerHTML = "";
 
-    if(!res.ok){
-      status.textContent = "❌ Failed to load logs";
-      return;
+    const data =
+      await response.json();
+
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        "Failed to load logs"
+      );
+
     }
 
-    status.textContent = `📊 ${data.logs.length} Access Logs`;
 
-    // Country Ranking
-    const countries = {};
+    const accessLogs =
+      Array.isArray(data.logs)
+        ? data.logs
+        : [];
 
-    data.logs.forEach(log=>{
-      const c = log.country || "Unknown";
-      countries[c] = (countries[c] || 0) + 1;
-    });
 
-    const ranking = Object.entries(countries)
-      .sort((a,b)=>b[1]-a[1]);
+    logs.innerHTML = "";
 
-    ranking.forEach(([country,count],index)=>{
 
-      countryRanking.innerHTML += `
-        <div class="rank-item">
-          <div class="rank-left">
-            <div class="rank-num">#${index+1}</div>
-            <div class="flag">${getFlag(country)}</div>
-            <div class="country-name">${country}</div>
-          </div>
-          <div class="count">${count}</div>
+    status.textContent =
+      `📊 ${accessLogs.length} Access Logs`;
+
+
+    if(accessLogs.length === 0){
+
+      logs.innerHTML = `
+
+        <div class="empty">
+          No access logs found.
         </div>
+
       `;
 
-    });
+      return;
 
-    // Recent Access Logs
-    data.logs.forEach(log=>{
+    }
 
-      logs.innerHTML += `
-        <div class="log">
-          <div class="username">👤 ${log.username}</div>
-          <div class="region">${getFlag(log.country)} ${log.country || "Unknown"}</div>
-          <div class="time">🕒 ${new Date(log.access_time).toLocaleString("ja-JP")}</div>
+
+    // ==========================
+    // Recent Access
+    // ==========================
+
+    accessLogs.forEach(log => {
+
+
+      const username =
+        log.username ||
+        "Unknown";
+
+
+      const country =
+        log.country ||
+        "Unknown";
+
+
+      const prefecture =
+        log.prefecture ||
+        log.region ||
+        "Unknown";
+
+
+      const accessTime =
+        log.access_time;
+
+
+      let formattedTime =
+        "Unknown";
+
+
+      if(accessTime){
+
+        const date =
+          new Date(accessTime);
+
+
+        if(!isNaN(date.getTime())){
+
+          formattedTime =
+            date.toLocaleString(
+              "ja-JP",
+              {
+                year:"numeric",
+                month:"2-digit",
+                day:"2-digit",
+                hour:"2-digit",
+                minute:"2-digit",
+                second:"2-digit"
+              }
+            );
+
+        }
+
+      }
+
+
+      const logElement =
+        document.createElement("div");
+
+
+      logElement.className =
+        "log";
+
+
+      logElement.innerHTML = `
+
+        <div class="username">
+          👤 ${escapeHTML(username)}
         </div>
+
+        <div class="info">
+          ${getFlag(country)}
+          ${escapeHTML(country)}
+        </div>
+
+        <div class="info">
+          📍 ${escapeHTML(prefecture)}
+        </div>
+
+        <div class="time">
+          🕒 ${formattedTime}
+        </div>
+
       `;
 
+
+      logs.appendChild(
+        logElement
+      );
+
     });
 
-  }catch(err){
 
-    console.error(err);
-    status.textContent = "❌ Connection error";
+  }catch(error){
+
+    console.error(error);
+
+
+    status.textContent =
+      "❌ Failed to load logs";
+
+
+    logs.innerHTML = `
+
+      <div class="empty">
+
+        ${escapeHTML(
+          error.message ||
+          "Connection error"
+        )}
+
+      </div>
+
+    `;
 
   }
 
 }
 
-onAuthStateChanged(auth, async(user)=>{
 
-  if(!user){
-    status.textContent = "🔒 Admin sign in required";
-    loginBtn.style.display = "block";
-    logs.innerHTML = "";
-    countryRanking.innerHTML = "";
-    return;
+// ==============================
+// HTML escape
+// ==============================
+
+function escapeHTML(value){
+
+  return String(value)
+
+    .replaceAll("&","&amp;")
+
+    .replaceAll("<","&lt;")
+
+    .replaceAll(">","&gt;")
+
+    .replaceAll('"',"&quot;")
+
+    .replaceAll("'","&#039;");
+
+}
+
+
+// ==============================
+// Auth
+// ==============================
+
+onAuthStateChanged(
+  auth,
+  async(user) => {
+
+
+    if(!user){
+
+      status.textContent =
+        "🔒 Admin sign in required";
+
+      loginBtn.style.display =
+        "block";
+
+      logs.innerHTML = "";
+
+      return;
+
+    }
+
+
+    loginBtn.style.display =
+      "none";
+
+
+    const email =
+      (user.email || "")
+        .toLowerCase()
+        .trim();
+
+
+    if(
+      !ADMIN_EMAILS.includes(email)
+    ){
+
+      status.textContent =
+        "❌ Access denied";
+
+      logs.innerHTML = `
+
+        <div class="empty">
+
+          This page is available to
+          administrators only.
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    status.textContent =
+      "Loading logs...";
+
+
+    await loadLogs();
+
   }
 
-  loginBtn.style.display = "none";
+);
 
-  const email = (user.email || "").toLowerCase().trim();
-
-  if(!ADMIN_EMAILS.includes(email)){
-    status.textContent = "❌ Access denied";
-    logs.innerHTML = "";
-    countryRanking.innerHTML = "";
-    return;
-  }
-
-  status.textContent = "Loading logs...";
-  await loadLogs();
-
-});
 
 </script>
 
 </body>
+
 </html>
