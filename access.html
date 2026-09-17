@@ -90,25 +90,32 @@ async function loadLogs(){
 
 }
 
-onAuthStateChanged(auth,async(user)=>{
+onAuthStateChanged(auth, async (user) => {
 
- if(!user){
-   status.textContent="🔒 Sign in required";
-   return;
- }
+  if (!user) {
+    status.textContent = "🔒 Admin sign in required";
+    loginBtn.style.display = "block";
+    logs.innerHTML = "";
+    return;
+  }
 
- const ok=ADMIN_EMAILS.includes(
-   user.email.toLowerCase()
- );
+  loginBtn.style.display = "none";
 
- if(!ok){
-   status.textContent="❌ Access denied";
-   return;
- }
+  const email = (user.email || "").toLowerCase().trim();
 
- loadLogs();
+  if (!ADMIN_EMAILS.includes(email)) {
+    status.textContent = "❌ Access denied";
+    logs.innerHTML = "";
+    return;
+  }
 
+  status.textContent = "Loading logs...";
+  await loadLogs();
 });
+
+loginBtn.onclick = async () => {
+  await loginWithGoogle();
+};
 </script>
 </body>
 </html>
