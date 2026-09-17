@@ -75,6 +75,17 @@ button:hover{
   background:#475569;
 }
 
+.rank{
+  font-size:22px;
+  font-weight:bold;
+  margin-top:8px;
+}
+
+.rank-label{
+  color:#94a3b8;
+  font-size:14px;
+}
+
 #msg{
   margin-top:12px;
 }
@@ -120,6 +131,8 @@ button:hover{
 
 </div>
 
+<!-- SPEEDRUN -->
+
 <div class="card">
 
   <h2>⏱ Speedrun</h2>
@@ -139,7 +152,13 @@ button:hover{
 
   <p id="speedPts">0 / 300</p>
 
+  <div class="rank-label">Sub Rank</div>
+  <div class="rank" id="speedRank">Basic</div>
+
 </div>
+
+
+<!-- BATTLE -->
 
 <div class="card">
 
@@ -160,7 +179,13 @@ button:hover{
 
   <p id="winPts">0 / 100</p>
 
+  <div class="rank-label">Sub Rank</div>
+  <div class="rank" id="battleRank">Basic</div>
+
 </div>
+
+
+<!-- TAG -->
 
 <div class="card">
 
@@ -181,7 +206,13 @@ button:hover{
 
   <p id="tagPts">0 / 50</p>
 
+  <div class="rank-label">Sub Rank</div>
+  <div class="rank" id="tagRank">Basic</div>
+
 </div>
+
+
+<!-- COMMUNITY -->
 
 <div class="card">
 
@@ -189,9 +220,28 @@ button:hover{
 
   <h3 id="community">0 pt</h3>
 
-  <p>Monthly Community Points</p>
+  <p>
+    Participation:
+    <span id="communityParticipation">0</span>
+  </p>
+
+  <p>
+    Average Position:
+    <span id="communityAverageRank">0</span>
+  </p>
+
+  <p>
+    Community Value:
+    <span id="communityValue">0</span>
+  </p>
+
+  <div class="rank-label">Sub Rank</div>
+  <div class="rank" id="communityRank">Basic</div>
 
 </div>
+
+
+<!-- SAVE -->
 
 <div class="card">
 
@@ -202,6 +252,7 @@ button:hover{
 </div>
 
 </div>
+
 
 <script type="module">
 
@@ -240,7 +291,158 @@ const msg =
 
 let currentUID = "";
 let currentUsername = "";
+
 let communityPoints = 0;
+let communityParticipation = 0;
+let communityAverageRank = 0;
+
+
+/* =========================
+   SUB RANK FUNCTIONS
+========================= */
+
+
+/*
+   SPEEDRUN
+
+   Master+  <= 530
+   Master   >530 - <=550
+   Platinum >550 - <=580
+   Gold     >580 - <=630
+   Silver   >630 - <=700
+   Bronze   >700 - <=1000
+   Basic    >1000
+*/
+
+function getSpeedRank(value){
+
+  value = Number(value);
+
+  if(value <= 530)
+    return "Master+";
+
+  if(value <= 550)
+    return "Master";
+
+  if(value <= 580)
+    return "Platinum";
+
+  if(value <= 630)
+    return "Gold";
+
+  if(value <= 700)
+    return "Silver";
+
+  if(value <= 1000)
+    return "Bronze";
+
+  return "Basic";
+}
+
+
+/*
+   BATTLE
+
+   Master    >=10000
+   Platinum  >=5000
+   Gold      >=1000
+   Silver    >=500
+   Bronze    >=100
+   Basic     <100
+*/
+
+function getBattleRank(value){
+
+  value = Number(value);
+
+  if(value >= 10000)
+    return "Master";
+
+  if(value >= 5000)
+    return "Platinum";
+
+  if(value >= 1000)
+    return "Gold";
+
+  if(value >= 500)
+    return "Silver";
+
+  if(value >= 100)
+    return "Bronze";
+
+  return "Basic";
+}
+
+
+/*
+   TAG
+
+   Master    >=1750
+   Platinum  >=1500
+   Gold      >=1200
+   Silver    >=600
+   Bronze    >=100
+   Basic     <100
+*/
+
+function getTagRank(value){
+
+  value = Number(value);
+
+  if(value >= 1750)
+    return "Master";
+
+  if(value >= 1500)
+    return "Platinum";
+
+  if(value >= 1200)
+    return "Gold";
+
+  if(value >= 600)
+    return "Silver";
+
+  if(value >= 100)
+    return "Bronze";
+
+  return "Basic";
+}
+
+
+/*
+   COMMUNITY
+
+   Community Value =
+   Average Position × Participation
+
+   Master    1 - 3
+   Platinum  >3 - 6
+   Gold      >6 - 9
+   Silver    >9 - 15
+   Bronze    >15 - 30
+   Basic     >30
+*/
+
+function getCommunityRank(value){
+
+  value = Number(value);
+
+  if(value <= 3)
+    return "Master";
+
+  if(value <= 6)
+    return "Platinum";
+
+  if(value <= 9)
+    return "Gold";
+
+  if(value <= 15)
+    return "Silver";
+
+  if(value <= 30)
+    return "Bronze";
+
+  return "Basic";
+}
 
 
 /* =========================
@@ -249,27 +451,56 @@ let communityPoints = 0;
 
 function calc(){
 
+  const speedValue =
+    Number(speed.value);
+
+  const winsValue =
+    Number(wins.value);
+
+  const tagValue =
+    Number(tag.value);
+
+
+  /* SPEED POINTS */
+
   const speedPoints = Math.max(
     0,
     Math.min(
       300,
       Math.round(
-        (1200 - Number(speed.value))
+        (1200 - speedValue)
         / 710
         * 300
       )
     )
   );
 
+
+  /* BATTLE POINTS */
+
   const winPoints =
     Math.round(
-      (Number(wins.value) / 10000) * 100
+      (winsValue / 10000) * 100
     );
+
+
+  /* TAG POINTS */
 
   const tagPoints =
     Math.round(
-      (Number(tag.value) / 2000) * 50
+      (tagValue / 2000) * 50
     );
+
+
+  /* COMMUNITY */
+
+  const communityValue =
+    communityParticipation > 0 &&
+    communityAverageRank > 0
+      ? communityAverageRank *
+        communityParticipation
+      : 0;
+
 
   const total =
     speedPoints +
@@ -278,14 +509,16 @@ function calc(){
     communityPoints;
 
 
+  /* DISPLAY VALUES */
+
   document.getElementById("speedValue").textContent =
-    speed.value;
+    speedValue;
 
   document.getElementById("winsValue").textContent =
-    wins.value;
+    winsValue;
 
   document.getElementById("tagValue").textContent =
-    tag.value;
+    tagValue;
 
 
   document.getElementById("speedPts").textContent =
@@ -301,6 +534,10 @@ function calc(){
   document.getElementById("total").textContent =
     total + " / 550";
 
+
+  /* =========================
+     OVERALL GRADE
+  ========================= */
 
   let grade = "D";
 
@@ -324,12 +561,46 @@ function calc(){
     grade;
 
 
+  /* =========================
+     SUB RANK DISPLAY
+  ========================= */
+
+  document.getElementById("speedRank").textContent =
+    getSpeedRank(speedValue);
+
+  document.getElementById("battleRank").textContent =
+    getBattleRank(winsValue);
+
+  document.getElementById("tagRank").textContent =
+    getTagRank(tagValue);
+
+  document.getElementById("communityValue").textContent =
+    communityValue;
+
+  document.getElementById("communityRank").textContent =
+    communityParticipation > 0
+      ? getCommunityRank(communityValue)
+      : "Basic";
+
+
+  document.getElementById(
+    "communityParticipation"
+  ).textContent =
+    communityParticipation;
+
+  document.getElementById(
+    "communityAverageRank"
+  ).textContent =
+    communityAverageRank;
+
+
   return {
     speedPoints,
     winPoints,
     tagPoints,
     total,
-    grade
+    grade,
+    communityValue
   };
 }
 
@@ -363,6 +634,7 @@ onAuthStateChanged(auth, async(user) => {
   const userRef =
     doc(db, "users", user.uid);
 
+
   const snap =
     await getDoc(userRef);
 
@@ -372,7 +644,7 @@ onAuthStateChanged(auth, async(user) => {
     const data = snap.data();
 
 
-    /* Username */
+    /* USERNAME */
 
     if(data.username){
 
@@ -388,7 +660,7 @@ onAuthStateChanged(auth, async(user) => {
     }
 
 
-    /* Stats */
+    /* STATS */
 
     speed.value =
       data.speedrun ?? 1200;
@@ -400,8 +672,16 @@ onAuthStateChanged(auth, async(user) => {
       data.tag ?? 0;
 
 
+    /* COMMUNITY */
+
     communityPoints =
       data.community ?? 0;
+
+    communityParticipation =
+      data.communityParticipation ?? 0;
+
+    communityAverageRank =
+      data.communityAverageRank ?? 0;
 
 
     document.getElementById(
@@ -471,7 +751,8 @@ saveBtn.onclick = async() => {
       doc(db, "users", currentUID),
       {
 
-        username: currentUsername,
+        username:
+          currentUsername,
 
         speedrun:
           Number(speed.value),
@@ -484,6 +765,12 @@ saveBtn.onclick = async() => {
 
         community:
           communityPoints,
+
+        communityParticipation:
+          communityParticipation,
+
+        communityAverageRank:
+          communityAverageRank,
 
         total:
           score.total,
